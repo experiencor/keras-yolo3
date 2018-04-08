@@ -1,17 +1,16 @@
 {
     "model" : {
-        "backend":              "Full Yolo",
         "min_input_size":       352,
         "max_input_size":       448,
         "anchors":              [10,13,  16,30,  33,23,  30,61,  62,45,  59,119,  116,90,  156,198,  373,326],
-        "max_box_per_image":    10,        
-        "labels":               ["kangaroo"]
+        "max_box_per_image":    10,
+        "labels":               ["raccoon"]
     },
 
     "train": {
-        "train_image_folder":   "/home/andy/github/kangaroo/images/",
-        "train_annot_folder":   "/home/andy/github/kangaroo/annots/",     
-          
+        "train_image_folder":   "/home/andy/data/raccoon_dataset/images/",
+        "train_annot_folder":   "/home/andy/data/raccoon_dataset/anns/",
+
         "train_times":          4,
         "pretrained_weights":   "",
         "batch_size":           8,
@@ -20,7 +19,7 @@
         "warmup_epochs":        3,
         "ignore_thresh":        0.5,
 
-        "saved_weights_name":   "full_yolo_kangaroo.h5",
+        "saved_weights_name":   "raccoon.h5",
         "debug":                true
     },
 

@@ -4,8 +4,8 @@ import os
 import argparse
 import json
 import cv2
-from utils import preprocess_input, decode_netout, correct_yolo_boxes, do_nms
-from bbox import draw_boxes
+from utils.utils import preprocess_input, decode_netout, correct_yolo_boxes, do_nms
+from utils.bbox import draw_boxes
 from keras.models import load_model
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
