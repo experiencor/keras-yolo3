@@ -24,8 +24,8 @@
     },
 
     "valid": {
-        "valid_image_folder":   "",
-        "valid_annot_folder":   "",
+        "valid_image_folder":   "/home/andy/github/kangaroo/images/",
+        "valid_annot_folder":   "/home/andy/github/kangaroo/annots/",
 
         "valid_times":          1
     }

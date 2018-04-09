@@ -10,6 +10,7 @@ from generator import BatchGenerator
 from utils.utils import normalize, evaluate
 from keras.callbacks import EarlyStopping, ModelCheckpoint
 from keras.optimizers import Adam
+from keras.models import load_model
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"]="0" # define the GPU to work on here
@@ -134,8 +135,11 @@ def _main_(args):
     ###############################
     #   Create the model 
     ###############################
-    warmup_batches  = config['train']['warmup_epochs'] * (config['train']['train_times']*len(train_generator) + \
-                                                          config['valid']['valid_times']*len(valid_generator)) 
+    if os.path.exists(config['train']['saved_weights_name']): 
+        warmup_batches = 0 # no need warmup if the pretrained weight exists
+    else:
+        warmup_batches  = config['train']['warmup_epochs'] * (config['train']['train_times']*len(train_generator) + \
+                                                              config['valid']['valid_times']*len(valid_generator))     
 
     train_model, infer_model = create_yolov3_model(
         nb_class            = len(labels), 
@@ -147,7 +151,7 @@ def _main_(args):
         ignore_thresh       = config['train']['ignore_thresh']
     )
 
-    # load the weight of the backend, which includes all layers but the last ones
+    # load the pretrained weight if exists, otherwise load the backend weight only
     if os.path.exists(config['train']['saved_weights_name']): 
         print("Loading pretrained weights.")
         train_model.load_weights(config['train']['saved_weights_name'], by_name=True)
@@ -180,8 +184,6 @@ def _main_(args):
     ###############################
     #   Run the evaluation
     ###############################   
-    infer_model = load_model(config['train']['saved_weights_name'])
-
     # compute mAP for all the classes
     average_precisions = evaluate(infer_model, valid_generator)
 

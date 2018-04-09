@@ -1,9 +1,9 @@
-# YOLO3 (Detection and Training, Evaluation in progress#
+# YOLO3 (Detection, Training, and Evaluation)
 
 ## Todo list:
 - [x] Yolo3 detection
 - [x] Yolo3 training (warmup and multi-scale)
-- [ ] Evaluation
+- [x] Evaluation
 - [ ] Multi-GPU training
 - [ ] MobileNet, DenseNet, ResNet, and VGG backends
 
