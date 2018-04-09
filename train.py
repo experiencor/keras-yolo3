@@ -27,15 +27,16 @@ def create_training_instances(
     train_image_folder,
     valid_annot_folder,
     valid_image_folder,
-    labels
+    labels,
+    include_empty
 ):
     # parse annotations of the training set
-    train_ints, train_labels = parse_voc_annotation(train_annot_folder, train_image_folder, labels)
+    train_ints, train_labels = parse_voc_annotation(train_annot_folder, train_image_folder, labels, include_empty)
 
     # parse annotations of the validation set, if any, otherwise split the training set
     if os.path.exists(valid_annot_folder):
         print("valid_annot_folder not exists. Spliting the trainining set.")
-        valid_ints, valid_labels = parse_voc_annotation(valid_annot_folder, valid_image_folder, labels)
+        valid_ints, valid_labels = parse_voc_annotation(valid_annot_folder, valid_image_folder, labels, include_empty)
     else:
         train_valid_split = int(0.8*len(train_ints))
         np.random.shuffle(train_ints)
@@ -148,6 +149,7 @@ def _main_(args):
 
     # load the weight of the backend, which includes all layers but the last ones
     if os.path.exists(config['train']['saved_weights_name']): 
+        print("Loading pretrained weights.")
         train_model.load_weights(config['train']['saved_weights_name'], by_name=True)
     else:
         train_model.load_weights("backend.h5", by_name=True)

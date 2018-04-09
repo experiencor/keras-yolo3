@@ -155,7 +155,7 @@ class YoloLayer(Layer):
 
         xy_delta    = xywh_mask   * (pred_box_xy-true_box_xy) * xywh_scale
         wh_delta    = xywh_mask   * (pred_box_wh-true_box_wh) * xywh_scale
-        conf_delta  = object_mask * (pred_box_conf-true_box_conf) + (1-object_mask) * conf_delta
+        conf_delta  = object_mask * (pred_box_conf-true_box_conf) * 5 + (1-object_mask) * conf_delta
         class_delta = object_mask * (pred_box_class-true_box_class)
 
         loss = tf.reduce_sum(tf.square(xy_delta)) + \
