@@ -9,7 +9,7 @@ class BoundBox:
         self.xmax = xmax
         self.ymax = ymax
         
-        self.c     = c
+        self.c       = c
         self.classes = classes
 
         self.label = -1

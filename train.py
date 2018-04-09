@@ -7,12 +7,12 @@ import json
 from voc import parse_voc_annotation
 from yolo import create_yolov3_model
 from generator import BatchGenerator
-from utils.utils import normalize
+from utils.utils import normalize, evaluate
 from keras.callbacks import EarlyStopping, ModelCheckpoint
 from keras.optimizers import Adam
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
+os.environ["CUDA_VISIBLE_DEVICES"]="0" # define the GPU to work on here
 
 argparser = argparse.ArgumentParser(
     description='Train and evaluate YOLO_v3 model on any dataset')
@@ -30,15 +30,12 @@ def create_training_instances(
     labels
 ):
     # parse annotations of the training set
-    train_ints, train_labels = parse_voc_annotation(train_annot_folder, 
-                                                train_image_folder, 
-                                                labels)
+    train_ints, train_labels = parse_voc_annotation(train_annot_folder, train_image_folder, labels)
 
     # parse annotations of the validation set, if any, otherwise split the training set
     if os.path.exists(valid_annot_folder):
-        valid_ints, valid_labels = parse_voc_annotation(valid_annot_folder, 
-                                                    valid_image_folder, 
-                                                    labels)
+        print("valid_annot_folder not exists. Spliting the trainining set.")
+        valid_ints, valid_labels = parse_voc_annotation(valid_annot_folder, valid_image_folder, labels)
     else:
         train_valid_split = int(0.8*len(train_ints))
         np.random.shuffle(train_ints)
@@ -46,20 +43,21 @@ def create_training_instances(
         valid_ints = train_ints[train_valid_split:]
         train_ints = train_ints[:train_valid_split]
 
+    # compare the seen labels with the given labels in config.json
     if len(labels) > 0:
         overlap_labels = set(labels).intersection(set(train_labels.keys()))
 
-        print('Seen labels: ', train_labels)
-        print('Given labels: ', labels)
-        print('Overlap labels: ', overlap_labels)   
+        print('Seen labels: \t\t'  + str(train_labels))
+        print('Given labels: \t\t' + str(labels))
+        print('Overlap labels: \t' + str(list(overlap_labels)))
 
-        # return None, None, None if some provided label is not in the dataset
+        # return None, None, None if some given label is not in the dataset
         if len(overlap_labels) < len(labels):
-            print('Some labels have no annotations! Please revise the list of labels in the config.json file!')
+            print('Some labels have no annotations! Please revise the list of labels in the config.json.')
             return None, None, None
     else:
         print('No labels are provided. Train on all seen labels.')
-        labels = train_labels.keys()
+        labels = sorted(train_labels.keys())
 
     return train_ints, valid_ints, labels
 
@@ -97,7 +95,8 @@ def _main_(args):
         config['train']['train_image_folder'],
         config['valid']['valid_annot_folder'],
         config['valid']['valid_image_folder'],
-        config['model']['labels']
+        config['model']['labels'],
+        config['train']['include_empty']
     )
 
     ###############################
@@ -106,7 +105,7 @@ def _main_(args):
     train_generator = BatchGenerator(
         instances           = train_ints, 
         anchors             = config['model']['anchors'],   
-        labels              = config['model']['labels'],        
+        labels              = labels,        
         downsample          = 32, # ratio between network input's size and network output's size, 32 for YOLOv3
         max_box_per_image   = config['model']['max_box_per_image'],
         batch_size          = config['train']['batch_size'],
@@ -120,7 +119,7 @@ def _main_(args):
     valid_generator = BatchGenerator(
         instances           = valid_ints, 
         anchors             = config['model']['anchors'],   
-        labels              = config['model']['labels'],        
+        labels              = labels,        
         downsample          = 32, # ratio between network input's size and network output's size, 32 for YOLOv3
         max_box_per_image   = config['model']['max_box_per_image'],
         batch_size          = config['train']['batch_size'],
@@ -138,7 +137,7 @@ def _main_(args):
                                                           config['valid']['valid_times']*len(valid_generator)) 
 
     train_model, infer_model = create_yolov3_model(
-        nb_class            = len(config['model']['labels']), 
+        nb_class            = len(labels), 
         anchors             = config['model']['anchors'], 
         max_box_per_image   = config['model']['max_box_per_image'], 
         max_grid            = [config['model']['max_input_size'], config['model']['max_input_size']], 
@@ -147,7 +146,11 @@ def _main_(args):
         ignore_thresh       = config['train']['ignore_thresh']
     )
 
-    train_model.load_weights("backend.h5", by_name=True)
+    # load the weight of the backend, which includes all layers but the last ones
+    if os.path.exists(config['train']['saved_weights_name']): 
+        train_model.load_weights(config['train']['saved_weights_name'], by_name=True)
+    else:
+        train_model.load_weights("backend.h5", by_name=True)
 
     ###############################
     #   Kick off the training
@@ -171,6 +174,19 @@ def _main_(args):
 
     infer_model.load_weights(config['train']['saved_weights_name'], by_name=True)
     infer_model.save(config['train']['saved_weights_name'])
+
+    ###############################
+    #   Run the evaluation
+    ###############################   
+    infer_model = load_model(config['train']['saved_weights_name'])
+
+    # compute mAP for all the classes
+    average_precisions = evaluate(infer_model, valid_generator)
+
+    # print the score
+    for label, average_precision in average_precisions.items():
+        print(labels[label] + ': {:.4f}'.format(average_precision))
+    print('mAP: {:.4f}'.format(sum(average_precisions.values()) / len(average_precisions)))           
 
 if __name__ == '__main__':
     args = argparser.parse_args()

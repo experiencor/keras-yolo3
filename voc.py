@@ -2,14 +2,19 @@ import numpy as np
 import os
 import xml.etree.ElementTree as ET
 
-def parse_voc_annotation(ann_dir, img_dir, labels=[]):
+def parse_voc_annotation(ann_dir, img_dir, labels=[], keep_empty=True):
     all_imgs = []
     seen_labels = {}
     
     for ann in sorted(os.listdir(ann_dir)):
         img = {'object':[]}
 
-        tree = ET.parse(ann_dir + ann)
+        try:
+            tree = ET.parse(ann_dir + ann)
+        except Exception as e:
+            print(e)
+            print('Ignore this bad annotation: ' + ann_dir + ann)
+            continue
         
         for elem in tree.iter():
             if 'filename' in elem.tag:
@@ -46,7 +51,7 @@ def parse_voc_annotation(ann_dir, img_dir, labels=[]):
                             if 'ymax' in dim.tag:
                                 obj['ymax'] = int(round(float(dim.text)))
 
-        if len(img['object']) > 0:
+        if len(img['object']) > 0 or keep_empty:
             all_imgs += [img]
                         
     return all_imgs, seen_labels

@@ -19,20 +19,19 @@ class BatchGenerator(Sequence):
         jitter=True, 
         norm=None
     ):
-        self.instances       = instances
-        self.batch_size   = batch_size
-        self.labels = labels
-        self.downsample = downsample
-        self.max_box_per_image = max_box_per_image
-        self.min_net_size = (min_net_size//self.downsample)*self.downsample
-        self.max_net_size = (max_net_size//self.downsample)*self.downsample
-        self.shuffle      = shuffle
-        self.jitter       = jitter
-        self.norm         = norm
-        self.anchors      = [BoundBox(0, 0, anchors[2*i], anchors[2*i+1]) for i in range(len(anchors)//2)]
-
-        self.net_h        = 416  
-        self.net_w        = 416
+        self.instances          = instances
+        self.batch_size         = batch_size
+        self.labels             = labels
+        self.downsample         = downsample
+        self.max_box_per_image  = max_box_per_image
+        self.min_net_size       = (min_net_size//self.downsample)*self.downsample
+        self.max_net_size       = (max_net_size//self.downsample)*self.downsample
+        self.shuffle            = shuffle
+        self.jitter             = jitter
+        self.norm               = norm
+        self.anchors            = [BoundBox(0, 0, anchors[2*i], anchors[2*i+1]) for i in range(len(anchors)//2)]
+        self.net_h              = 416  
+        self.net_w              = 416
 
         if shuffle: np.random.shuffle(self.instances)
             
@@ -42,7 +41,7 @@ class BatchGenerator(Sequence):
     def __getitem__(self, idx):
         # get image input size, change every 10 batches
         net_h, net_w = self._get_net_size(idx)
-        base_grid_h, base_grid_w = net_h/self.downsample, net_w/self.downsample
+        base_grid_h, base_grid_w = net_h//self.downsample, net_w//self.downsample
 
         # determine the first and the last indices of the batch
         l_bound = idx*self.batch_size
@@ -206,6 +205,14 @@ class BatchGenerator(Sequence):
 
     def size(self):
         return len(self.instances)    
+
+    def get_anchors(self):
+        anchors = []
+
+        for anchor in self.anchors:
+            anchors += [anchor.xmax, anchor.ymax]
+
+        return anchors
 
     def load_annotation(self, i):
         annots = []
