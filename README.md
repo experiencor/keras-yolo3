@@ -56,6 +56,7 @@ The configuration file is a json file, which looks like this:
         "nb_epoch":             50,             # number of epoches
         "warmup_epochs":        3,              # the number of initial epochs during which the sizes of the 5 boxes in each cell is forced to match the sizes of the 5 anchors, this trick seems to improve precision emperically
         "ignore_thresh":        0.5,
+        "gpus":                 "0,1",
 
         "saved_weights_name":   "raccoon.h5",
         "debug":                true            # turn on/off the line that prints current confidence, position, size, class losses and recall
@@ -78,6 +79,12 @@ Download pretrained weights for backend at:
 https://1drv.ms/u/s!ApLdDEW3ut5fgQXa7GzSlG-mdza6
 
 **This weights must be put in the root folder of the repository. They are the pretrained weights for the backend only and will be loaded during model creation. The code does not work without this weights.**
+
+### 3. Generate anchors for your dataset (optional)
+
+`python gen_anchors.py -c config.json`
+
+Copy the generated anchors printed on the terminal to the ```anchors``` setting in ```config.json```.
 
 ### 4. Start the training process
 

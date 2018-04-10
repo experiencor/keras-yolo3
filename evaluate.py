@@ -13,7 +13,6 @@ from keras.optimizers import Adam
 from keras.models import load_model
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]="0" # define the GPU to work on here
 
 def _main_(args):
     config_path = args.conf

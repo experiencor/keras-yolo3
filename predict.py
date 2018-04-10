@@ -11,7 +11,6 @@ from tqdm import tqdm
 import numpy as np
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]="0" # define the GPU to work on here
 
 def _main_(args):
     config_path  = args.conf
@@ -37,7 +36,6 @@ def _main_(args):
     ###############################
     #   Predict bounding boxes 
     ###############################
-
     # do detection on a video
     if input_path[-4:] == '.mp4':
         video_out = input_path[:-4] + '_bbox' + input_path[-4:]
