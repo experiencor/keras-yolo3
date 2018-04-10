@@ -5,23 +5,15 @@ import os
 import numpy as np
 import json
 from voc import parse_voc_annotation
-from yolo import create_yolov3_model
+from yolo import create_yolov3_model, dummy_loss
 from generator import BatchGenerator
 from utils.utils import normalize, evaluate
 from keras.callbacks import EarlyStopping, ModelCheckpoint
 from keras.optimizers import Adam
-from keras.models import load_model
+from utils.multi_gpu_model import multi_gpu_model
+import tensorflow as tf
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]="0" # define the GPU to work on here
-
-argparser = argparse.ArgumentParser(
-    description='Train and evaluate YOLO_v3 model on any dataset')
-
-argparser.add_argument(
-    '-c',
-    '--conf',
-    help='path to configuration file')
 
 def create_training_instances(
     train_annot_folder,
@@ -29,15 +21,15 @@ def create_training_instances(
     valid_annot_folder,
     valid_image_folder,
     labels,
-    include_empty
+    include_empty_image
 ):
     # parse annotations of the training set
-    train_ints, train_labels = parse_voc_annotation(train_annot_folder, train_image_folder, labels, include_empty)
+    train_ints, train_labels = parse_voc_annotation(train_annot_folder, train_image_folder, labels, include_empty_image)
 
     # parse annotations of the validation set, if any, otherwise split the training set
     if os.path.exists(valid_annot_folder):
         print("valid_annot_folder not exists. Spliting the trainining set.")
-        valid_ints, valid_labels = parse_voc_annotation(valid_annot_folder, valid_image_folder, labels, include_empty)
+        valid_ints, valid_labels = parse_voc_annotation(valid_annot_folder, valid_image_folder, labels, include_empty_image)
     else:
         train_valid_split = int(0.8*len(train_ints))
         np.random.shuffle(train_ints)
@@ -83,6 +75,43 @@ def create_callbacks(saved_weights_name):
 
     return [early_stop, checkpoint]
 
+def create_model(nb_class, anchors, max_box_per_image, max_grid, batch_size, warmup_batches, ignore_thresh, multi_gpu, saved_weights_name):
+    if multi_gpu > 1:
+        with tf.device('/cpu:0'):
+            template_model, infer_model = create_yolov3_model(
+                nb_class            = nb_class, 
+                anchors             = anchors, 
+                max_box_per_image   = max_box_per_image, 
+                max_grid            = max_grid, 
+                batch_size          = batch_size//multi_gpu, 
+                warmup_batches      = warmup_batches,
+                ignore_thresh       = ignore_thresh
+            )
+    else:
+        template_model, infer_model = create_yolov3_model(
+            nb_class            = nb_class, 
+            anchors             = anchors, 
+            max_box_per_image   = max_box_per_image, 
+            max_grid            = max_grid, 
+            batch_size          = batch_size//multi_gpu, 
+            warmup_batches      = warmup_batches,
+            ignore_thresh       = ignore_thresh
+        )        
+
+    # load the pretrained weight if exists, otherwise load the backend weight only
+    if os.path.exists(saved_weights_name): 
+        print("\nLoading pretrained weights.\n")
+        template_model.load_weights(saved_weights_name)
+    else:
+        template_model.load_weights("backend.h5", by_name=True)       
+
+    if multi_gpu > 1:
+        train_model = multi_gpu_model(template_model, gpus=multi_gpu)
+    else:
+        train_model = template_model           
+
+    return train_model, infer_model
+
 def _main_(args):
     config_path = args.conf
 
@@ -98,7 +127,7 @@ def _main_(args):
         config['valid']['valid_annot_folder'],
         config['valid']['valid_image_folder'],
         config['model']['labels'],
-        config['train']['include_empty']
+        config['train']['include_empty_image']
     )
 
     ###############################
@@ -139,30 +168,28 @@ def _main_(args):
         warmup_batches = 0 # no need warmup if the pretrained weight exists
     else:
         warmup_batches  = config['train']['warmup_epochs'] * (config['train']['train_times']*len(train_generator) + \
-                                                              config['valid']['valid_times']*len(valid_generator))     
+                                                              config['valid']['valid_times']*len(valid_generator))   
 
-    train_model, infer_model = create_yolov3_model(
+    os.environ['CUDA_VISIBLE_DEVICES'] = config['train']['gpus']
+    multi_gpu = len(config['train']['gpus'].split(','))
+
+    train_model, infer_model = create_model(
         nb_class            = len(labels), 
         anchors             = config['model']['anchors'], 
         max_box_per_image   = config['model']['max_box_per_image'], 
         max_grid            = [config['model']['max_input_size'], config['model']['max_input_size']], 
         batch_size          = config['train']['batch_size'], 
         warmup_batches      = warmup_batches,
-        ignore_thresh       = config['train']['ignore_thresh']
+        ignore_thresh       = config['train']['ignore_thresh'],
+        multi_gpu           = multi_gpu,
+        saved_weights_name  = config['train']['saved_weights_name']
     )
-
-    # load the pretrained weight if exists, otherwise load the backend weight only
-    if os.path.exists(config['train']['saved_weights_name']): 
-        print("Loading pretrained weights.")
-        train_model.load_weights(config['train']['saved_weights_name'], by_name=True)
-    else:
-        train_model.load_weights("backend.h5", by_name=True)
 
     ###############################
     #   Kick off the training
     ###############################
     optimizer = Adam(lr=config['train']['learning_rate'], beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0)
-    train_model.compile(loss=lambda y_true, y_pred: y_pred, optimizer=optimizer)
+    train_model.compile(loss=dummy_loss, optimizer=optimizer)
 
     callbacks = create_callbacks(config['train']['saved_weights_name'])
 
@@ -174,12 +201,26 @@ def _main_(args):
         validation_data  = valid_generator,
         validation_steps = len(valid_generator) * config['valid']['valid_times'],
         callbacks        = callbacks, 
-        workers          = 3,
+        workers          = 4,
         max_queue_size   = 8
     )
 
-    infer_model.load_weights(config['train']['saved_weights_name'], by_name=True)
+    # load the best weight before early stop
+    train_model.load_weights(config['train']['saved_weights_name'])
+    
+    if multi_gpu > 1:
+        # fix the saved model structure when multi_gpu > 1
+        train_model.get_layer("model_1").save(config['train']['saved_weights_name'])
+
+        # load the best weight to the infer_model
+        infer_model.load_weights(config['train']['saved_weights_name'])
+
+    # save the weight with the model structure of infer_model
     infer_model.save(config['train']['saved_weights_name'])
+
+    # make a GPU version of infer_model for evaluation
+    if multi_gpu > 1:
+        infer_model = load_model(config['train']['saved_weights_name'])
 
     ###############################
     #   Run the evaluation
@@ -193,5 +234,13 @@ def _main_(args):
     print('mAP: {:.4f}'.format(sum(average_precisions.values()) / len(average_precisions)))           
 
 if __name__ == '__main__':
+    argparser = argparse.ArgumentParser(
+        description='Train and evaluate YOLO_v3 model on any dataset')
+
+    argparser.add_argument(
+        '-c',
+        '--conf',
+        help='path to configuration file')    
+
     args = argparser.parse_args()
     _main_(args)

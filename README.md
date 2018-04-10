@@ -4,18 +4,19 @@
 - [x] Yolo3 detection
 - [x] Yolo3 training (warmup and multi-scale)
 - [x] Evaluation
-- [ ] Multi-GPU training
+- [x] Multi-GPU training
+- [ ] Evaluation on COCO
 - [ ] MobileNet, DenseNet, ResNet, and VGG backends
 
 ## Detection
 
 Grab the pretrained weights of yolo3 from https://pjreddie.com/media/files/yolov3.weights.
 
-```python yolo3_detect.py -w yolo3.weights -i dog.jpg``` 
+```python yolo3_one_file_to_detect_them_all.py -w yolo3.weights -i dog.jpg``` 
 
 ## Training
 
-### 1. Data preparation
+### 1. Data preparation 
 
 Download the Raccoon dataset from from https://github.com/experiencor/raccoon_dataset.
 

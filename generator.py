@@ -115,9 +115,6 @@ class BatchGenerator(Sequence):
                 grid_x = int(np.floor(center_x))
                 grid_y = int(np.floor(center_y))
 
-                if grid_x >= grid_w: print obj['xmin'], obj['xmax'], img.shape
-                if grid_y >= grid_h: print obj['ymin'], obj['ymax'], img.shape
-                
                 # assign ground truth x, y, w, h, confidence and class probs to y_batch
                 yolo[instance_count, grid_y, grid_x, max_index%3, 0:4] = box
                 yolo[instance_count, grid_y, grid_x, max_index%3, 4  ] = 1.

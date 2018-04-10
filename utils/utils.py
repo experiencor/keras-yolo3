@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from bbox import BoundBox, bbox_iou
+from .bbox import BoundBox, bbox_iou
 
 def _sigmoid(x):
     return 1. / (1. + np.exp(-x))
@@ -17,9 +17,13 @@ def evaluate(model,
     code originally from https://github.com/fizyr/keras-retinanet
 
     # Arguments
-        generator       : The generator that represents the dataset to evaluate.
         model           : The model to evaluate.
+        generator       : The generator that represents the dataset to evaluate.
         iou_threshold   : The threshold used to consider when a detection is positive or negative.
+        obj_thresh      : The threshold used to distinguish between object and non-object
+        nms_thresh      : The threshold used to determine whether two detections are duplicates
+        net_h           : The height of the input image to the model, higher value results in better accuracy
+        net_w           : The width of the input image to the model
         save_path       : The path to save images with visualized detections to.
     # Returns
         A dict mapping class names to mAP scores.
@@ -167,7 +171,7 @@ def decode_netout(netout, anchors, obj_thresh, net_h, net_w):
     netout[..., 5:] *= netout[..., 5:] > obj_thresh
 
     for i in range(grid_h*grid_w):
-        row = i / grid_w
+        row = i // grid_w
         col = i % grid_w
         
         for b in range(nb_box):
@@ -198,10 +202,10 @@ def preprocess_input(image, net_h, net_w):
 
     # determine the new size of the image
     if (float(net_w)/new_w) < (float(net_h)/new_h):
-        new_h = (new_h * net_w)/new_w
+        new_h = (new_h * net_w)//new_w
         new_w = net_w
     else:
-        new_w = (new_w * net_h)/new_h
+        new_w = (new_w * net_h)//new_h
         new_h = net_h
 
     # resize the image to the new size
@@ -209,7 +213,7 @@ def preprocess_input(image, net_h, net_w):
 
     # embed the image into the standard letter box
     new_image = np.ones((net_h, net_w, 3)) * 0.5
-    new_image[(net_h-new_h)/2:(net_h+new_h)/2, (net_w-new_w)/2:(net_w+new_w)/2, :] = resized
+    new_image[(net_h-new_h)//2:(net_h+new_h)//2, (net_w-new_w)//2:(net_w+new_w)//2, :] = resized
     new_image = np.expand_dims(new_image, 0)
 
     return new_image

@@ -13,19 +13,6 @@ import numpy as np
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"]="0" # define the GPU to work on here
 
-argparser = argparse.ArgumentParser(
-    description='Predict with a trained yolo model')
-
-argparser.add_argument(
-    '-c',
-    '--conf',
-    help='path to configuration file')
-
-argparser.add_argument(
-    '-i',
-    '--input',
-    help='path to an image or an video (mp4 format)')
-
 def _main_(args):
     config_path  = args.conf
     input_path   = args.input
@@ -39,9 +26,12 @@ def _main_(args):
     net_h, net_w = 416, 416
     obj_thresh, nms_thresh = 0.5, 0.45
 
+
     ###############################
     #   Load the model
     ###############################
+    os.environ['CUDA_VISIBLE_DEVICES'] = config['train']['gpus']
+
     infer_model = load_model(config['train']['saved_weights_name'])
 
     ###############################
@@ -101,5 +91,17 @@ def _main_(args):
             cv2.imwrite(image_path[:-4] + '_bbox' + image_path[-4:], np.uint8(image))         
 
 if __name__ == '__main__':
+    argparser = argparse.ArgumentParser(
+        description='Predict with a trained yolo model')
+
+    argparser.add_argument(
+        '-c',
+        '--conf',
+        help='path to configuration file')
+    argparser.add_argument(
+        '-i',
+        '--input',
+        help='path to an image or an video (mp4 format)')    
+    
     args = argparser.parse_args()
     _main_(args)

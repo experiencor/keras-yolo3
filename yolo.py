@@ -30,8 +30,8 @@ class YoloLayer(Layer):
         y_pred = tf.reshape(y_pred, tf.concat([tf.shape(y_pred)[:3], tf.constant([3, -1])], axis=0))
         
         # initialize the masks
-        delta_shape = tf.shape(y_true)[:4]
-        object_mask = tf.expand_dims(y_true[..., 4], 4)
+        object_mask     = tf.expand_dims(y_true[..., 4], 4)
+        no_object_mask  = 1 - object_mask
 
         # the variable to keep track of number of batches processed
         batch_seen = tf.Variable(0.)        
@@ -125,18 +125,20 @@ class YoloLayer(Layer):
         iou_scores  = tf.truediv(intersect_areas, union_areas)
         iou_scores  = object_mask * tf.expand_dims(iou_scores, 4)
 
-        count    = tf.reduce_sum(tf.to_float(object_mask))
-        recall50 = tf.reduce_sum(tf.to_float(iou_scores >= 0.5 )) / (count + 1e-3)
-        recall75 = tf.reduce_sum(tf.to_float(iou_scores >= 0.75)) / (count + 1e-3)
-        avg_iou  = tf.reduce_sum(iou_scores) / (count + 1e-3)
-        avg_obj  = tf.reduce_sum(object_mask * pred_box_conf  * true_box_conf)  / (count + 1e-3)
-        avg_cat  = tf.reduce_sum(object_mask * pred_box_class * true_box_class) / (count + 1e-3) 
+        count       = tf.reduce_sum(tf.to_float(object_mask))
+        count_noobj = tf.reduce_sum(tf.to_float(no_object_mask))
+        recall50    = tf.reduce_sum(tf.to_float(iou_scores >= 0.5 )) / (count + 1e-3)
+        recall75    = tf.reduce_sum(tf.to_float(iou_scores >= 0.75)) / (count + 1e-3)
+        avg_iou     = tf.reduce_sum(iou_scores) / (count + 1e-3)
+        avg_obj     = tf.reduce_sum(object_mask * pred_box_conf  * true_box_conf)  / (count + 1e-3)
+        avg_noobj   = tf.reduce_sum(no_object_mask * pred_box_conf)  / (count_noobj + 1e-3)
+        avg_cat     = tf.reduce_sum(object_mask * pred_box_class * true_box_class) / (count + 1e-3) 
                
 
         """
         Warm-up training
         """
-        no_object_mask = 1 - object_mask
+        
         batch_seen = tf.assign_add(batch_seen, 1.)
         
         true_box_xy, true_box_wh, xywh_mask = tf.cond(tf.less(batch_seen, self.warmup_batches+1), 
@@ -158,25 +160,25 @@ class YoloLayer(Layer):
         conf_delta  = object_mask * (pred_box_conf-true_box_conf) * 5 + (1-object_mask) * conf_delta
         class_delta = object_mask * (pred_box_class-true_box_class)
 
-        loss = tf.reduce_sum(tf.square(xy_delta)) + \
-               tf.reduce_sum(tf.square(wh_delta)) + \
-               tf.reduce_sum(tf.square(conf_delta)) + \
-               tf.reduce_sum(tf.square(class_delta))
+        loss = tf.reduce_sum(tf.square(xy_delta),       list(range(1,5))) + \
+               tf.reduce_sum(tf.square(wh_delta),       list(range(1,5))) + \
+               tf.reduce_sum(tf.square(conf_delta),     list(range(1,5))) + \
+               tf.reduce_sum(tf.square(class_delta),    list(range(1,5)))
 
         loss = tf.cond(tf.less(batch_seen, self.warmup_batches+1), # add 10 to the loss if this is the warmup stage
                       lambda: loss + 10,
                       lambda: loss)
 
-        loss = tf.Print(loss, [net_h, net_w], message='Net input size: ', summarize=1000)
-        loss = tf.Print(loss, [avg_iou], message='avg_iou \t\t', summarize=1000)
-        loss = tf.Print(loss, [avg_obj], message='avg_obj \t\t', summarize=1000)
-        loss = tf.Print(loss, [avg_cat], message='avg_cat \t\t', summarize=1000)
-        loss = tf.Print(loss, [recall50], message='recall50 \t', summarize=1000)
-        loss = tf.Print(loss, [recall75], message='recall75 \t', summarize=1000)   
-        loss = tf.Print(loss, [count], message='count \t', summarize=1000)     
-        loss = tf.Print(loss, [loss],  message='loss: \t',   summarize=1000)   
+        loss = tf.Print(loss, [grid_h, avg_obj], message='avg_obj \t\t', summarize=1000)
+        loss = tf.Print(loss, [grid_h, avg_noobj], message='avg_noobj \t\t', summarize=1000)
+        loss = tf.Print(loss, [grid_h, avg_iou], message='avg_iou \t\t', summarize=1000)
+        loss = tf.Print(loss, [grid_h, avg_cat], message='avg_cat \t\t', summarize=1000)
+        loss = tf.Print(loss, [grid_h, recall50], message='recall50 \t', summarize=1000)
+        loss = tf.Print(loss, [grid_h, recall75], message='recall75 \t', summarize=1000)   
+        loss = tf.Print(loss, [grid_h, count], message='count \t', summarize=1000)     
+        loss = tf.Print(loss, [grid_h, tf.reduce_sum(loss)],  message='loss: \t',   summarize=1000)   
 
-        return tf.sqrt(loss)
+        return loss
 
     def compute_output_shape(self, input_shape):
         return [(None, 1)]
@@ -317,3 +319,6 @@ def create_yolov3_model(
     infer_model = Model(input_image, [pred_yolo_1, pred_yolo_2, pred_yolo_3])
 
     return [train_model, infer_model]
+
+def dummy_loss(y_true, y_pred):
+    return tf.sqrt(tf.reduce_sum(y_pred))

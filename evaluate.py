@@ -15,14 +15,6 @@ from keras.models import load_model
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"]="0" # define the GPU to work on here
 
-argparser = argparse.ArgumentParser(
-    description='Evaluate YOLO_v3 model on any dataset')
-
-argparser.add_argument(
-    '-c',
-    '--conf',
-    help='path to configuration file')
-
 def _main_(args):
     config_path = args.conf
 
@@ -57,6 +49,8 @@ def _main_(args):
     ###############################
     #   Load the model and do evaluation
     ###############################
+    os.environ['CUDA_VISIBLE_DEVICES'] = config['train']['gpus']
+
     infer_model = load_model(config['train']['saved_weights_name'])
 
     # compute mAP for all the classes
@@ -68,5 +62,13 @@ def _main_(args):
     print('mAP: {:.4f}'.format(sum(average_precisions.values()) / len(average_precisions)))           
 
 if __name__ == '__main__':
+    argparser = argparse.ArgumentParser(
+        description='Evaluate YOLO_v3 model on any dataset')
+
+    argparser.add_argument(
+        '-c',
+        '--conf',
+        help='path to configuration file')    
+    
     args = argparser.parse_args()
     _main_(args)
