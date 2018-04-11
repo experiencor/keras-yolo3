@@ -18,19 +18,21 @@ os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
 def create_training_instances(
     train_annot_folder,
     train_image_folder,
+    train_cache,
     valid_annot_folder,
     valid_image_folder,
+    valid_cache,
     labels,
-    include_empty_image
 ):
     # parse annotations of the training set
-    train_ints, train_labels = parse_voc_annotation(train_annot_folder, train_image_folder, labels, include_empty_image)
+    train_ints, train_labels = parse_voc_annotation(train_annot_folder, train_image_folder, train_cache, labels)
 
     # parse annotations of the validation set, if any, otherwise split the training set
     if os.path.exists(valid_annot_folder):
-        print("valid_annot_folder not exists. Spliting the trainining set.")
-        valid_ints, valid_labels = parse_voc_annotation(valid_annot_folder, valid_image_folder, labels, include_empty_image)
+        valid_ints, valid_labels = parse_voc_annotation(valid_annot_folder, valid_image_folder, valid_cache, labels)
     else:
+        print("valid_annot_folder not exists. Spliting the trainining set.")
+
         train_valid_split = int(0.8*len(train_ints))
         np.random.shuffle(train_ints)
 
@@ -51,9 +53,10 @@ def create_training_instances(
             return None, None, None
     else:
         print('No labels are provided. Train on all seen labels.')
-        labels = sorted(train_labels.keys())
+        print(train_labels)
+        labels = train_labels.keys()
 
-    return train_ints, valid_ints, labels
+    return train_ints, valid_ints, sorted(labels)
 
 def create_callbacks(saved_weights_name):
     early_stop = EarlyStopping(
@@ -124,10 +127,11 @@ def _main_(args):
     train_ints, valid_ints, labels = create_training_instances(
         config['train']['train_annot_folder'],
         config['train']['train_image_folder'],
+        config['train']['cache_name'],
         config['valid']['valid_annot_folder'],
         config['valid']['valid_image_folder'],
-        config['model']['labels'],
-        config['train']['include_empty_image']
+        config['valid']['cache_name'],
+        config['model']['labels']
     )
 
     ###############################

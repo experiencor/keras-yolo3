@@ -5,20 +5,6 @@ import numpy as np
 from voc import parse_voc_annotation
 import json
 
-argparser = argparse.ArgumentParser()
-
-argparser.add_argument(
-    '-c',
-    '--conf',
-    default='config.json',
-    help='path to configuration file')
-
-argparser.add_argument(
-    '-a',
-    '--anchors',
-    default=9,
-    help='number of anchors to use')
-
 def IOU(ann, centroids):
     w, h = ann
     similarities = []
@@ -98,7 +84,7 @@ def run_kmeans(ann_dims, anchor_num):
         prev_assignments = assignments.copy()
         old_distances = distances.copy()
 
-def main(argv):
+def _main_(argv):
     config_path = args.conf
     num_anchors = args.anchors
 
@@ -108,8 +94,8 @@ def main(argv):
     train_imgs, train_labels = parse_voc_annotation(
         config['train']['train_annot_folder'],
         config['train']['train_image_folder'],
-        config['model']['labels'], 
-        False
+        config['train']['cache_name'],
+        config['model']['labels']
     )
 
     # run k_mean to find the anchors
@@ -129,5 +115,18 @@ def main(argv):
     print_anchors(centroids)
 
 if __name__ == '__main__':
+    argparser = argparse.ArgumentParser()
+
+    argparser.add_argument(
+        '-c',
+        '--conf',
+        default='config.json',
+        help='path to configuration file')
+    argparser.add_argument(
+        '-a',
+        '--anchors',
+        default=9,
+        help='number of anchors to use')
+
     args = argparser.parse_args()
-    main(args)
+    _main_(args)

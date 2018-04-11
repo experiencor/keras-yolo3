@@ -221,27 +221,37 @@ def preprocess_input(image, net_h, net_w):
 def normalize(image):
     return image/255.
        
-def get_yolo_boxes(model, image, net_h, net_w, anchors, obj_thresh, nms_thresh):
+def get_yolo_boxes(model, images, net_h, net_w, anchors, obj_thresh, nms_thresh):
+    image_h, image_w, _ = images[0].shape
+    nb_images           = len(images)
+    batch_input         = np.zeros((nb_images, net_h, net_w, 3))
+
     # preprocess the input
-    image_h, image_w, _ = image.shape
-    new_image = preprocess_input(image, net_h, net_w)        
+    for i in range(nb_images):
+        batch_input[i] = preprocess_input(images[i], net_h, net_w)        
 
     # run the prediction
-    yolos = model.predict(new_image)
-    boxes = []
+    batch_output = model.predict_on_batch(batch_input)
+    batch_boxes  = [None]*nb_images
 
-    for i in range(len(yolos)):
+    for i in range(nb_images):
+        yolos = [batch_output[0][i], batch_output[1][i], batch_output[2][i]]
+        boxes = []
+
         # decode the output of the network
-        yolo_anchors = anchors[(2-i)*6:(3-i)*6] # config['model']['anchors']
-        boxes += decode_netout(yolos[i][0], yolo_anchors, obj_thresh, net_h, net_w)
+        for j in range(len(yolos)):
+            yolo_anchors = anchors[(2-j)*6:(3-j)*6] # config['model']['anchors']
+            boxes += decode_netout(yolos[j], yolo_anchors, obj_thresh, net_h, net_w)
 
-    # correct the sizes of the bounding boxes
-    correct_yolo_boxes(boxes, image_h, image_w, net_h, net_w)
+        # correct the sizes of the bounding boxes
+        correct_yolo_boxes(boxes, image_h, image_w, net_h, net_w)
 
-    # suppress non-maximal boxes
-    do_nms(boxes, nms_thresh)     
+        # suppress non-maximal boxes
+        do_nms(boxes, nms_thresh)        
+           
+        batch_boxes[i] = boxes
 
-    return boxes        
+    return batch_boxes        
 
 def compute_overlap(a, b):
     """

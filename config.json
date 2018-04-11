@@ -10,8 +10,8 @@
     "train": {
         "train_image_folder":   "/home/andy/github/kangaroo/images/",
         "train_annot_folder":   "/home/andy/github/kangaroo/annots/",
-        "include_empty_image":  true,
-        
+        "cache_name":           "kangaroo_train.pkl",
+
         "train_times":          8,
         "batch_size":           16,
         "learning_rate":        1e-4,
@@ -27,6 +27,7 @@
     "valid": {
         "valid_image_folder":   "",
         "valid_annot_folder":   "",
+        "cache_name":           "",
 
         "valid_times":          1
     }
