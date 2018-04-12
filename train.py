@@ -12,6 +12,7 @@ from keras.callbacks import EarlyStopping, ModelCheckpoint
 from keras.optimizers import Adam
 from utils.multi_gpu_model import multi_gpu_model
 import tensorflow as tf
+from keras.models import load_model
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
 

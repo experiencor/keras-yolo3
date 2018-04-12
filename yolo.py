@@ -133,12 +133,10 @@ class YoloLayer(Layer):
         avg_obj     = tf.reduce_sum(object_mask * pred_box_conf  * true_box_conf)  / (count + 1e-3)
         avg_noobj   = tf.reduce_sum(no_object_mask * pred_box_conf)  / (count_noobj + 1e-3)
         avg_cat     = tf.reduce_sum(object_mask * pred_box_class * true_box_class) / (count + 1e-3) 
-               
 
         """
         Warm-up training
         """
-        
         batch_seen = tf.assign_add(batch_seen, 1.)
         
         true_box_xy, true_box_wh, xywh_mask = tf.cond(tf.less(batch_seen, self.warmup_batches+1), 
@@ -148,7 +146,6 @@ class YoloLayer(Layer):
                               lambda: [true_box_xy, 
                                        true_box_wh,
                                        object_mask])
-
         """
         Compare each true box to all anchor boxes
         """      
@@ -168,7 +165,7 @@ class YoloLayer(Layer):
         loss = tf.cond(tf.less(batch_seen, self.warmup_batches+1), # add 10 to the loss if this is the warmup stage
                       lambda: loss + 10,
                       lambda: loss)
-
+        
         loss = tf.Print(loss, [grid_h, avg_obj], message='avg_obj \t\t', summarize=1000)
         loss = tf.Print(loss, [grid_h, avg_noobj], message='avg_noobj \t\t', summarize=1000)
         loss = tf.Print(loss, [grid_h, avg_iou], message='avg_iou \t\t', summarize=1000)
