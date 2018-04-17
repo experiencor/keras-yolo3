@@ -116,6 +116,7 @@ class BatchGenerator(Sequence):
                 grid_y = int(np.floor(center_y))
 
                 # assign ground truth x, y, w, h, confidence and class probs to y_batch
+                yolo[instance_count, grid_y, grid_x, max_index%3]      = 0
                 yolo[instance_count, grid_y, grid_x, max_index%3, 0:4] = box
                 yolo[instance_count, grid_y, grid_x, max_index%3, 4  ] = 1.
                 yolo[instance_count, grid_y, grid_x, max_index%3, 5+obj_indx] = 1

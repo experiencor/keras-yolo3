@@ -26,7 +26,7 @@ def _main_(args):
     valid_ints, labels = parse_voc_annotation(
         config['valid']['valid_annot_folder'], 
         config['valid']['valid_image_folder'], 
-        config['valid']['cache_name']
+        config['valid']['cache_name'],
         config['model']['labels']
     )
 

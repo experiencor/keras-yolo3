@@ -5,11 +5,12 @@ from keras.engine.topology import Layer
 import tensorflow as tf
 
 class YoloLayer(Layer):
-    def __init__(self, anchors, max_grid, batch_size, warmup_batches, ignore_thresh, **kwargs):
+    def __init__(self, anchors, max_grid, batch_size, warmup_batches, ignore_thresh, scale, **kwargs):
         # make the model settings persistent
-        self.ignore_thresh = ignore_thresh
+        self.ignore_thresh  = ignore_thresh
         self.warmup_batches = warmup_batches
-        self.anchors = tf.constant(anchors, dtype='float', shape=[1,1,1,3,2])
+        self.anchors        = tf.constant(anchors, dtype='float', shape=[1,1,1,3,2])
+        self.scale          = scale
 
         # make a persistent mesh grid
         max_grid_h, max_grid_w = max_grid
@@ -31,7 +32,6 @@ class YoloLayer(Layer):
         
         # initialize the masks
         object_mask     = tf.expand_dims(y_true[..., 4], 4)
-        no_object_mask  = 1 - object_mask
 
         # the variable to keep track of number of batches processed
         batch_seen = tf.Variable(0.)        
@@ -81,9 +81,10 @@ class YoloLayer(Layer):
         pred_wh_half = pred_wh / 2.
         pred_mins    = pred_xy - pred_wh_half
         pred_maxes   = pred_xy + pred_wh_half    
-        
+
         intersect_mins  = tf.maximum(pred_mins,  true_mins)
         intersect_maxes = tf.minimum(pred_maxes, true_maxes)
+
         intersect_wh    = tf.maximum(intersect_maxes - intersect_mins, 0.)
         intersect_areas = intersect_wh[..., 0] * intersect_wh[..., 1]
         
@@ -111,8 +112,8 @@ class YoloLayer(Layer):
         
         pred_wh_half = pred_wh / 2.
         pred_mins    = pred_xy - pred_wh_half
-        pred_maxes   = pred_xy + pred_wh_half       
-        
+        pred_maxes   = pred_xy + pred_wh_half      
+
         intersect_mins  = tf.maximum(pred_mins,  true_mins)
         intersect_maxes = tf.minimum(pred_maxes, true_maxes)
         intersect_wh    = tf.maximum(intersect_maxes - intersect_mins, 0.)
@@ -124,15 +125,21 @@ class YoloLayer(Layer):
         union_areas = pred_areas + true_areas - intersect_areas
         iou_scores  = tf.truediv(intersect_areas, union_areas)
         iou_scores  = object_mask * tf.expand_dims(iou_scores, 4)
-
-        count       = tf.reduce_sum(tf.to_float(object_mask))
-        count_noobj = tf.reduce_sum(tf.to_float(no_object_mask))
-        recall50    = tf.reduce_sum(tf.to_float(iou_scores >= 0.5 )) / (count + 1e-3)
-        recall75    = tf.reduce_sum(tf.to_float(iou_scores >= 0.75)) / (count + 1e-3)
+        
+        count       = tf.reduce_sum(object_mask)
+        count_noobj = tf.reduce_sum(1-object_mask)
+        detect_mask = tf.to_float(pred_box_conf*object_mask >= 0.5)
+        class_mask  = tf.expand_dims(tf.to_float(tf.equal(tf.argmax(pred_box_class, -1), tf.argmax(true_box_class, -1))), 4)
+        recall50    = tf.to_float(iou_scores >= 0.5 ) * detect_mask
+        recall75    = tf.to_float(iou_scores >= 0.75) * detect_mask
+        recall50_c  = tf.reduce_sum(recall50  * class_mask) / (count + 1e-3)
+        recall75_c  = tf.reduce_sum(recall75  * class_mask) / (count + 1e-3)    
+        recall50    = tf.reduce_sum(recall50) / (count + 1e-3)
+        recall75    = tf.reduce_sum(recall75) / (count + 1e-3)        
         avg_iou     = tf.reduce_sum(iou_scores) / (count + 1e-3)
-        avg_obj     = tf.reduce_sum(object_mask * pred_box_conf  * true_box_conf)  / (count + 1e-3)
-        avg_noobj   = tf.reduce_sum(no_object_mask * pred_box_conf)  / (count_noobj + 1e-3)
-        avg_cat     = tf.reduce_sum(object_mask * pred_box_class * true_box_class) / (count + 1e-3) 
+        avg_obj     = tf.reduce_sum(pred_box_conf  * object_mask)  / (count + 1e-3)
+        avg_noobj   = tf.reduce_sum(pred_box_conf  * (1-object_mask))  / (count_noobj + 1e-3)
+        avg_cat     = tf.reduce_sum(pred_box_class * true_box_class) / (count + 1e-3) 
 
         """
         Warm-up training
@@ -140,12 +147,13 @@ class YoloLayer(Layer):
         batch_seen = tf.assign_add(batch_seen, 1.)
         
         true_box_xy, true_box_wh, xywh_mask = tf.cond(tf.less(batch_seen, self.warmup_batches+1), 
-                              lambda: [true_box_xy + (0.5 + self.cell_grid[:,:grid_h,:grid_w,:,:]) * no_object_mask, 
-                                       true_box_wh + tf.zeros_like(true_box_wh) * no_object_mask, 
+                              lambda: [true_box_xy + (0.5 + self.cell_grid[:,:grid_h,:grid_w,:,:]) * (1-object_mask), 
+                                       true_box_wh + tf.zeros_like(true_box_wh) * (1-object_mask), 
                                        tf.ones_like(object_mask)],
                               lambda: [true_box_xy, 
                                        true_box_wh,
                                        object_mask])
+
         """
         Compare each true box to all anchor boxes
         """      
@@ -172,10 +180,12 @@ class YoloLayer(Layer):
         loss = tf.Print(loss, [grid_h, avg_cat], message='avg_cat \t\t', summarize=1000)
         loss = tf.Print(loss, [grid_h, recall50], message='recall50 \t', summarize=1000)
         loss = tf.Print(loss, [grid_h, recall75], message='recall75 \t', summarize=1000)   
+        loss = tf.Print(loss, [grid_h, recall50_c], message='recall50_cat \t', summarize=1000)
+        loss = tf.Print(loss, [grid_h, recall75_c], message='recall75_Cat \t', summarize=1000)          
         loss = tf.Print(loss, [grid_h, count], message='count \t', summarize=1000)     
         loss = tf.Print(loss, [grid_h, tf.reduce_sum(loss)],  message='loss: \t',   summarize=1000)   
 
-        return loss
+        return loss*self.scale
 
     def compute_output_shape(self, input_shape):
         return [(None, 1)]
@@ -275,7 +285,7 @@ def create_yolov3_model(
     # Layer 80 => 82
     pred_yolo_1 = _conv_block(x, [{'filter': 1024, 'kernel': 3, 'stride': 1, 'bnorm': True,  'leaky': True,  'layer_idx': 80},
                              {'filter': (3*(5+nb_class)), 'kernel': 1, 'stride': 1, 'bnorm': False, 'leaky': False, 'layer_idx': 81}], do_skip=False)
-    loss_yolo_1 = YoloLayer(anchors[12:], [1*num for num in max_grid], batch_size, warmup_batches, ignore_thresh)\
+    loss_yolo_1 = YoloLayer(anchors[12:], [1*num for num in max_grid], batch_size, warmup_batches, ignore_thresh, 1)\
                            ([input_image, pred_yolo_1, true_yolo_1, true_boxes])
 
     # Layer 83 => 86
@@ -293,7 +303,7 @@ def create_yolov3_model(
     # Layer 92 => 94
     pred_yolo_2 = _conv_block(x, [{'filter': 512, 'kernel': 3, 'stride': 1, 'bnorm': True,  'leaky': True,  'layer_idx': 92},
                              {'filter': (3*(5+nb_class)), 'kernel': 1, 'stride': 1, 'bnorm': False, 'leaky': False, 'layer_idx': 93}], do_skip=False)
-    loss_yolo_2 = YoloLayer(anchors[6:12], [2*num for num in max_grid], batch_size, warmup_batches, ignore_thresh)\
+    loss_yolo_2 = YoloLayer(anchors[6:12], [2*num for num in max_grid], batch_size, warmup_batches, ignore_thresh, 5)\
                            ([input_image, pred_yolo_2, true_yolo_2, true_boxes])
 
     # Layer 95 => 98
@@ -309,7 +319,7 @@ def create_yolov3_model(
                              {'filter': 128, 'kernel': 1, 'stride': 1, 'bnorm': True,  'leaky': True,  'layer_idx': 103},
                              {'filter': 256, 'kernel': 3, 'stride': 1, 'bnorm': True,  'leaky': True,  'layer_idx': 104},
                              {'filter': (3*(5+nb_class)), 'kernel': 1, 'stride': 1, 'bnorm': False, 'leaky': False, 'layer_idx': 105}], do_skip=False)
-    loss_yolo_3 = YoloLayer(anchors[:6], [4*num for num in max_grid], batch_size, warmup_batches, ignore_thresh)\
+    loss_yolo_3 = YoloLayer(anchors[:6], [4*num for num in max_grid], batch_size, warmup_batches, ignore_thresh, 10)\
                            ([input_image, pred_yolo_3, true_yolo_3, true_boxes]) 
 
     train_model = Model([input_image, true_boxes, true_yolo_1, true_yolo_2, true_yolo_3], [loss_yolo_1, loss_yolo_2, loss_yolo_3])

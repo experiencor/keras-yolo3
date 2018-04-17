@@ -1,9 +1,18 @@
 import cv2
 import numpy as np
+import os
 from .bbox import BoundBox, bbox_iou
+from scipy.special import expit
 
 def _sigmoid(x):
-    return 1. / (1. + np.exp(-x))
+    return expit(x)
+
+def makedirs(path):
+    try:
+        os.makedirs(path)
+    except OSError:
+        if not os.path.isdir(path):
+            raise
 
 def evaluate(model, 
              generator, 
@@ -33,10 +42,10 @@ def evaluate(model,
     all_annotations    = [[None for i in range(generator.num_classes())] for j in range(generator.size())]
 
     for i in range(generator.size()):
-        raw_image = generator.load_image(i)
+        raw_image = [generator.load_image(i)]
 
         # make the boxes and the labels
-        pred_boxes = get_yolo_boxes(model, raw_image, net_h, net_w, generator.get_anchors(), obj_thresh, nms_thresh)
+        pred_boxes = get_yolo_boxes(model, raw_image, net_h, net_w, generator.get_anchors(), obj_thresh, nms_thresh)[0]
 
         score = np.array([box.get_score() for box in pred_boxes])
         pred_labels = np.array([box.label for box in pred_boxes])        

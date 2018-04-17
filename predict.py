@@ -29,7 +29,6 @@ def _main_(args):
     #   Load the model
     ###############################
     os.environ['CUDA_VISIBLE_DEVICES'] = config['train']['gpus']
-
     infer_model = load_model(config['train']['saved_weights_name'])
 
     ###############################
@@ -68,7 +67,7 @@ def _main_(args):
                                50.0, 
                                (frame_w, frame_h))
         # the main loop
-        batch_size  = 8
+        batch_size  = 1
         images      = []
         start_point = 0 #%
         show_window = False
@@ -111,6 +110,7 @@ def _main_(args):
         # the main loop
         for image_path in image_paths:
             image = cv2.imread(image_path)
+            print image_path
 
             # predict the bounding boxes
             boxes = get_yolo_boxes(infer_model, [image], net_h, net_w, config['model']['anchors'], obj_thresh, nms_thresh)[0]
@@ -122,17 +122,9 @@ def _main_(args):
             cv2.imwrite(image_path[:-4] + '_bbox' + image_path[-4:], np.uint8(image))         
 
 if __name__ == '__main__':
-    argparser = argparse.ArgumentParser(
-        description='Predict with a trained yolo model')
+    argparser = argparse.ArgumentParser(description='Predict with a trained yolo model')
+    argparser.add_argument('-c', '--conf',      help='path to configuration file')
+    argparser.add_argument('-i', '--input',     help='path to an image or an video (mp4 format)')    
 
-    argparser.add_argument(
-        '-c',
-        '--conf',
-        help='path to configuration file')
-    argparser.add_argument(
-        '-i',
-        '--input',
-        help='path to an image or an video (mp4 format)')    
-    
     args = argparser.parse_args()
     _main_(args)
