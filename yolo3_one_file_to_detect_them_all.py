@@ -7,8 +7,9 @@ from keras.models import Model
 import struct
 import cv2
 
+np.set_printoptions(threshold=np.nan)
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]=""
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 argparser = argparse.ArgumentParser(
     description='test yolov3 network with coco weights')
@@ -267,11 +268,11 @@ def preprocess_input(image, net_h, net_w):
         new_h = net_h
 
     # resize the image to the new size
-    resized = cv2.resize(image[:,:,::-1]/255., (new_w, new_h))
+    resized = cv2.resize(image[:,:,::-1]/255., (int(new_w), int(new_h)))
 
     # embed the image into the standard letter box
     new_image = np.ones((net_h, net_w, 3)) * 0.5
-    new_image[(net_h-new_h)/2:(net_h+new_h)/2, (net_w-new_w)/2:(net_w+new_w)/2, :] = resized
+    new_image[int((net_h-new_h)//2):int((net_h+new_h)//2), int((net_w-new_w)//2):int((net_w+new_w)//2), :] = resized
     new_image = np.expand_dims(new_image, 0)
 
     return new_image
@@ -295,12 +296,13 @@ def decode_netout(netout, anchors, obj_thresh, nms_thresh, net_h, net_w):
         
         for b in range(nb_box):
             # 4th element is objectness score
-            objectness = netout[row, col, b, 4]
+            objectness = netout[int(row)][int(col)][b][4]
+            #objectness = netout[..., :4]
             
-            if(objectness <= obj_thresh): continue
+            if(objectness.all() <= obj_thresh): continue
             
             # first 4 elements are x, y, w, and h
-            x, y, w, h = netout[row,col,b,:4]
+            x, y, w, h = netout[int(row)][int(col)][b][:4]
 
             x = (col + x) / grid_w # center position, unit: image width
             y = (row + y) / grid_h # center position, unit: image height
@@ -308,9 +310,10 @@ def decode_netout(netout, anchors, obj_thresh, nms_thresh, net_h, net_w):
             h = anchors[2 * b + 1] * np.exp(h) / net_h # unit: image height  
             
             # last elements are class probabilities
-            classes = netout[row,col,b,5:]
+            classes = netout[int(row)][col][b][5:]
             
             box = BoundBox(x-w/2, y-h/2, x+w/2, y+h/2, objectness, classes)
+            #box = BoundBox(x-w/2, y-h/2, x+w/2, y+h/2, None, classes)
 
             boxes.append(box)
 
