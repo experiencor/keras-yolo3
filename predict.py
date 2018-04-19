@@ -4,20 +4,21 @@ import os
 import argparse
 import json
 import cv2
-from utils.utils import get_yolo_boxes
+from utils.utils import get_yolo_boxes, makedirs
 from utils.bbox import draw_boxes
 from keras.models import load_model
 from tqdm import tqdm
 import numpy as np
 
-os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-
 def _main_(args):
     config_path  = args.conf
     input_path   = args.input
+    output_path  = args.output
 
     with open(config_path) as config_buffer:    
         config = json.load(config_buffer)
+
+    makedirs(output_path)
 
     ###############################
     #   Set some parameter
@@ -55,7 +56,7 @@ def _main_(args):
                 break  # esc to quit
         cv2.destroyAllWindows()        
     elif input_path[-4:] == '.mp4': # do detection on a video  
-        video_out = input_path[:-4] + '_bbox' + input_path[-4:]
+        video_out = output_path + input_path.split('/')[-1]
         video_reader = cv2.VideoCapture(input_path)
 
         nb_frames = int(video_reader.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -105,12 +106,12 @@ def _main_(args):
         else:
             image_paths += [input_path]
 
-        image_paths = [inp_file for inp_file in image_paths if (inp_file[-4:] == '.jpg' or inp_file == '.png') and '_bbox' not in inp_file]
+        image_paths = [inp_file for inp_file in image_paths if (inp_file[-4:] == '.jpg' or inp_file == '.png')]
 
         # the main loop
         for image_path in image_paths:
             image = cv2.imread(image_path)
-            print image_path
+            print(image_path)
 
             # predict the bounding boxes
             boxes = get_yolo_boxes(infer_model, [image], net_h, net_w, config['model']['anchors'], obj_thresh, nms_thresh)[0]
@@ -119,12 +120,13 @@ def _main_(args):
             draw_boxes(image, boxes, config['model']['labels'], obj_thresh) 
      
             # write the image with bounding boxes to file
-            cv2.imwrite(image_path[:-4] + '_bbox' + image_path[-4:], np.uint8(image))         
+            cv2.imwrite(output_path + image_path.split('/')[-1], np.uint8(image))         
 
 if __name__ == '__main__':
     argparser = argparse.ArgumentParser(description='Predict with a trained yolo model')
     argparser.add_argument('-c', '--conf',      help='path to configuration file')
-    argparser.add_argument('-i', '--input',     help='path to an image or an video (mp4 format)')    
-
+    argparser.add_argument('-i', '--input',     help='path to an image, a directory of images, a video, or webcam')    
+    argparser.add_argument('-o', '--output',    help='path to output directory')   
+    
     args = argparser.parse_args()
     _main_(args)

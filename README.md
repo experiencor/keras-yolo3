@@ -1,5 +1,13 @@
 # YOLO3 (Detection, Training, and Evaluation)
 
+## Dataset and Model
+
+    Dataset | mAP | Config | Model | Demo
+    :---:|:---:|:---:|:---:|:---:
+    Kangaroo Detection (https://github.com/experiencor/kangaroo) | 95% |  |  | https://youtu.be/URO3UDHvoLY
+    Raccoon Detection (https://github.com/experiencor/raccoon_dataset) | 98% | |  | https://youtu.be/lxLyLIL7OsU
+    Red Blood Cell Detection (https://github.com/experiencor/BCCD_Dataset) | 84% | |  | https://imgur.com/a/uJl2lRI
+
 ## Todo list:
 - [x] Yolo3 detection
 - [x] Yolo3 training (warmup and multi-scale)
@@ -38,7 +46,7 @@ The configuration file is a json file, which looks like this:
 ```python
 {
     "model" : {
-    	"min_input_size":       352,
+        "min_input_size":       352,
         "max_input_size":       448,
         "anchors":              [10,13,  16,30,  33,23,  30,61,  62,45,  59,119,  116,90,  156,198,  373,326],
         "max_box_per_image":    10,        

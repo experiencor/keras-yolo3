@@ -12,8 +12,6 @@ from keras.callbacks import EarlyStopping, ModelCheckpoint
 from keras.optimizers import Adam
 from keras.models import load_model
 
-os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-
 def _main_(args):
     config_path = args.conf
 
@@ -38,7 +36,7 @@ def _main_(args):
         anchors             = config['model']['anchors'],   
         labels              = labels,        
         downsample          = 32, # ratio between network input's size and network output's size, 32 for YOLOv3
-        max_box_per_image   = config['model']['max_box_per_image'],
+        max_box_per_image   = 0,
         batch_size          = config['train']['batch_size'],
         min_net_size        = config['model']['min_input_size'],
         max_net_size        = config['model']['max_input_size'],   
@@ -63,13 +61,8 @@ def _main_(args):
     print('mAP: {:.4f}'.format(sum(average_precisions.values()) / len(average_precisions)))           
 
 if __name__ == '__main__':
-    argparser = argparse.ArgumentParser(
-        description='Evaluate YOLO_v3 model on any dataset')
-
-    argparser.add_argument(
-        '-c',
-        '--conf',
-        help='path to configuration file')    
+    argparser = argparse.ArgumentParser(description='Evaluate YOLO_v3 model on any dataset')
+    argparser.add_argument('-c', '--conf', help='path to configuration file')    
     
     args = argparser.parse_args()
     _main_(args)

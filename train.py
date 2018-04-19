@@ -9,13 +9,12 @@ from yolo import create_yolov3_model, dummy_loss
 from generator import BatchGenerator
 from utils.utils import normalize, evaluate, makedirs
 from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau, TensorBoard
+from callbacks import SignalStopping
 from keras.optimizers import Adam
 from utils.multi_gpu_model import multi_gpu_model
 import tensorflow as tf
 import keras
 from keras.models import load_model
-
-os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
 
 def create_training_instances(
     train_annot_folder,
@@ -36,7 +35,9 @@ def create_training_instances(
         print("valid_annot_folder not exists. Spliting the trainining set.")
 
         train_valid_split = int(0.8*len(train_ints))
+        np.random.seed(0)
         np.random.shuffle(train_ints)
+        np.random.seed()
 
         valid_ints = train_ints[train_valid_split:]
         train_ints = train_ints[:train_valid_split]
@@ -65,10 +66,14 @@ def create_training_instances(
 def create_callbacks(saved_weights_name, tensorboard_logs):
     makedirs(tensorboard_logs)
     
+    signal_stopping = SignalStopping(
+        doubleSignalExits   = True,
+        verbose             = 1
+    )
     early_stop = EarlyStopping(
         monitor     = 'val_loss', 
         min_delta   = 0.001, 
-        patience    = 4, 
+        patience    = 5, 
         mode        = 'min', 
         verbose     = 1
     )
@@ -95,9 +100,20 @@ def create_callbacks(saved_weights_name, tensorboard_logs):
         write_graph            = True,
         write_images           = True,
     )    
-    return [early_stop, checkpoint, reduce_on_plateau, tensorboard]
+    return [signal_stopping, early_stop, checkpoint, reduce_on_plateau, tensorboard]
 
-def create_model(nb_class, anchors, max_box_per_image, max_grid, batch_size, warmup_batches, ignore_thresh, multi_gpu, saved_weights_name, lr):
+def create_model(
+    nb_class, 
+    anchors, 
+    max_box_per_image, 
+    max_grid, batch_size, 
+    warmup_batches, 
+    ignore_thresh, 
+    multi_gpu, 
+    saved_weights_name, 
+    lr,
+    scales
+):
     if multi_gpu > 1:
         with tf.device('/cpu:0'):
             template_model, infer_model = create_yolov3_model(
@@ -107,7 +123,8 @@ def create_model(nb_class, anchors, max_box_per_image, max_grid, batch_size, war
                 max_grid            = max_grid, 
                 batch_size          = batch_size//multi_gpu, 
                 warmup_batches      = warmup_batches,
-                ignore_thresh       = ignore_thresh
+                ignore_thresh       = ignore_thresh,
+                scales              = scales
             )
     else:
         template_model, infer_model = create_yolov3_model(
@@ -117,7 +134,8 @@ def create_model(nb_class, anchors, max_box_per_image, max_grid, batch_size, war
             max_grid            = max_grid, 
             batch_size          = batch_size, 
             warmup_batches      = warmup_batches,
-            ignore_thresh       = ignore_thresh
+            ignore_thresh       = ignore_thresh,
+            scales              = scales
         )        
 
     # load the pretrained weight if exists, otherwise load the backend weight only
@@ -192,10 +210,9 @@ def _main_(args):
     #   Create the model 
     ###############################
     if os.path.exists(config['train']['saved_weights_name']): 
-        warmup_batches = 0 # no need warmup if the pretrained weight exists
-    else:
-        warmup_batches = config['train']['warmup_epochs'] * (config['train']['train_times']*len(train_generator) + \
-                                                             config['valid']['valid_times']*len(valid_generator))   
+        config['train']['warmup_epochs'] = 0
+    warmup_batches = config['train']['warmup_epochs'] * (config['train']['train_times']*len(train_generator) + \
+                                                         config['valid']['valid_times']*len(valid_generator))   
 
     os.environ['CUDA_VISIBLE_DEVICES'] = config['train']['gpus']
     multi_gpu = len(config['train']['gpus'].split(','))
@@ -210,7 +227,8 @@ def _main_(args):
         ignore_thresh       = config['train']['ignore_thresh'],
         multi_gpu           = multi_gpu,
         saved_weights_name  = config['train']['saved_weights_name'],
-        lr                  = config['train']['learning_rate']
+        lr                  = config['train']['learning_rate'],
+        scales              = config['train']['scales'],
     )
 
     ###############################
@@ -218,7 +236,7 @@ def _main_(args):
     ###############################
     callbacks = create_callbacks(config['train']['saved_weights_name'], config['train']['tensorboard_dir'])
 
-    train_model.fit_generator(
+    """train_model.fit_generator(
         generator        = train_generator, 
         steps_per_epoch  = len(train_generator) * config['train']['train_times'], 
         epochs           = config['train']['nb_epochs'] + config['train']['warmup_epochs'], 
@@ -228,7 +246,7 @@ def _main_(args):
         callbacks        = callbacks, 
         workers          = 4,
         max_queue_size   = 8
-    )
+    )"""
 
     # load the best weight before early stop
     train_model.load_weights(config['train']['saved_weights_name'])
