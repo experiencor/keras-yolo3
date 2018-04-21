@@ -11,9 +11,9 @@ Red Blood Cell Detection (3 classes) (https://github.com/experiencor/BCCD_Datase
 ## Todo list:
 - [x] Yolo3 detection
 - [x] Yolo3 training (warmup and multi-scale)
-- [x] Evaluation
+- [x] mAP Evaluation
 - [x] Multi-GPU training
-- [ ] Evaluation on COCO
+- [ ] Evaluation on VOC and COCO
 - [ ] MobileNet, DenseNet, ResNet, and VGG backends
 
 ## Detection

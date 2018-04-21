@@ -236,7 +236,7 @@ def _main_(args):
     ###############################
     callbacks = create_callbacks(config['train']['saved_weights_name'], config['train']['tensorboard_dir'])
 
-    """train_model.fit_generator(
+    train_model.fit_generator(
         generator        = train_generator, 
         steps_per_epoch  = len(train_generator) * config['train']['train_times'], 
         epochs           = config['train']['nb_epochs'] + config['train']['warmup_epochs'], 
@@ -246,7 +246,7 @@ def _main_(args):
         callbacks        = callbacks, 
         workers          = 4,
         max_queue_size   = 8
-    )"""
+    )
 
     # load the best weight before early stop
     train_model.load_weights(config['train']['saved_weights_name'])
