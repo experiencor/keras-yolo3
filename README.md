@@ -7,13 +7,15 @@ Dataset | mAP | Config | Model | Demo
 Kangaroo Detection (1 class) (https://github.com/experiencor/kangaroo) | 95% | check zoo | check zoo | https://youtu.be/URO3UDHvoLY
 Raccoon Detection (1 class) (https://github.com/experiencor/raccoon_dataset) | 98% | check zoo | check zoo | https://youtu.be/lxLyLIL7OsU
 Red Blood Cell Detection (3 classes) (https://github.com/experiencor/BCCD_Dataset) | 84% | check zoo | check zoo | https://imgur.com/a/uJl2lRI
+VOC (20 classes) (http://host.robots.ox.ac.uk/pascal/VOC/voc2012/) | 72% | check zoo | check zoo | https://youtu.be/0RmOI6hcfBI
 
 ## Todo list:
 - [x] Yolo3 detection
 - [x] Yolo3 training (warmup and multi-scale)
 - [x] mAP Evaluation
 - [x] Multi-GPU training
-- [ ] Evaluation on VOC and COCO
+- [x] Evaluation on VOC
+- [ ] Evaluation on COCO
 - [ ] MobileNet, DenseNet, ResNet, and VGG backends
 
 ## Detection
