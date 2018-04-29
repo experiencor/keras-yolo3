@@ -1,67 +1,36 @@
-from keras.callbacks import Callback
+from keras.callbacks import TensorBoard, ModelCheckpoint
+import tensorflow as tf
 import numpy as np
 
-class CustomModelCheckpoint(Callback):
-    """Save the model after every epoch.
-    `filepath` can contain named formatting options,
-    which will be filled the value of `epoch` and
-    keys in `logs` (passed in `on_epoch_end`).
-    For example: if `filepath` is `weights.{epoch:02d}-{val_loss:.2f}.hdf5`,
-    then the model checkpoints will be saved with the epoch number and
-    the validation loss in the filename.
-    # Arguments
-        filepath: string, path to save the model file.
-        monitor: quantity to monitor.
-        verbose: verbosity mode, 0 or 1.
-        save_best_only: if `save_best_only=True`,
-            the latest best model according to
-            the quantity monitored will not be overwritten.
-        mode: one of {auto, min, max}.
-            If `save_best_only=True`, the decision
-            to overwrite the current save file is made
-            based on either the maximization or the
-            minimization of the monitored quantity. For `val_acc`,
-            this should be `max`, for `val_loss` this should
-            be `min`, etc. In `auto` mode, the direction is
-            automatically inferred from the name of the monitored quantity.
-        save_weights_only: if True, then only the model's weights will be
-            saved (`model.save_weights(filepath)`), else the full model
-            is saved (`model.save(filepath)`).
-        period: Interval (number of epochs) between checkpoints.
+class CustomTensorBoard(TensorBoard):
+    """ to log the loss after each batch
+    """    
+    def __init__(self, log_every=1, **kwargs):
+        super(CustomTensorBoard, self).__init__(**kwargs)
+        self.log_every = log_every
+        self.counter = 0
+    
+    def on_batch_end(self, batch, logs=None):
+        self.counter+=1
+        if self.counter%self.log_every==0:
+            for name, value in logs.items():
+                if name in ['batch', 'size']:
+                    continue
+                summary = tf.Summary()
+                summary_value = summary.value.add()
+                summary_value.simple_value = value.item()
+                summary_value.tag = name
+                self.writer.add_summary(summary, self.counter)
+            self.writer.flush()
+        
+        super(CustomTensorBoard, self).on_batch_end(batch, logs)
+
+class CustomModelCheckpoint(ModelCheckpoint):
+    """ to save the template model, not the multi-GPU model
     """
-
-    def __init__(self, filepath, model_to_save, monitor='val_loss', verbose=0,
-                 save_best_only=False, save_weights_only=False,
-                 mode='auto', period=1):
-        super(CustomModelCheckpoint, self).__init__()
+    def __init__(self, model_to_save, **kwargs):
+        super(CustomModelCheckpoint, self).__init__(**kwargs)
         self.model_to_save = model_to_save
-        self.monitor = monitor
-        self.verbose = verbose
-        self.filepath = filepath
-        self.save_best_only = save_best_only
-        self.save_weights_only = save_weights_only
-        self.period = period
-        self.epochs_since_last_save = 0
-
-        if mode not in ['auto', 'min', 'max']:
-            warnings.warn('ModelCheckpoint mode %s is unknown, '
-                          'fallback to auto mode.' % (mode),
-                          RuntimeWarning)
-            mode = 'auto'
-
-        if mode == 'min':
-            self.monitor_op = np.less
-            self.best = np.Inf
-        elif mode == 'max':
-            self.monitor_op = np.greater
-            self.best = -np.Inf
-        else:
-            if 'acc' in self.monitor or self.monitor.startswith('fmeasure'):
-                self.monitor_op = np.greater
-                self.best = -np.Inf
-            else:
-                self.monitor_op = np.less
-                self.best = np.Inf
 
     def on_epoch_end(self, epoch, logs=None):
         logs = logs or {}
@@ -97,3 +66,5 @@ class CustomModelCheckpoint(Callback):
                     self.model_to_save.save_weights(filepath, overwrite=True)
                 else:
                     self.model_to_save.save(filepath, overwrite=True)
+
+        super(CustomModelCheckpoint, self).on_batch_end(epoch, logs)

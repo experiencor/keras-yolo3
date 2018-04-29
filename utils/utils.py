@@ -175,8 +175,8 @@ def decode_netout(netout, anchors, obj_thresh, net_h, net_w):
     boxes = []
 
     netout[..., :2]  = _sigmoid(netout[..., :2])
-    netout[..., 4:]  = _sigmoid(netout[..., 4:])
-    netout[..., 5:]  = netout[..., 4][..., np.newaxis] * netout[..., 5:]
+    netout[..., 4]   = _sigmoid(netout[..., 4])
+    netout[..., 5:]  = netout[..., 4][..., np.newaxis] * _softmax(netout[..., 5:])
     netout[..., 5:] *= netout[..., 5:] > obj_thresh
 
     for i in range(grid_h*grid_w):
@@ -314,4 +314,10 @@ def compute_ap(recall, precision):
 
     # and sum (\Delta recall) * prec
     ap = np.sum((mrec[i + 1] - mrec[i]) * mpre[i + 1])
-    return ap          
+    return ap     
+
+def _softmax(x, axis=-1):
+    x = x - np.amax(x, axis, keepdims=True)
+    e_x = np.exp(x)
+    
+    return e_x / e_x.sum(axis, keepdims=True)

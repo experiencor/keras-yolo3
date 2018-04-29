@@ -1,0 +1,40 @@
+{
+    "model" : {
+        "min_input_size":       224,
+        "max_input_size":       480,
+        "anchors":              [24,34, 46,84, 68,185, 116,286, 122,97, 171,180, 214,327, 326,193, 359,359],
+        "labels":               ["aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"]
+    },
+
+    "train": {
+        "train_image_folder":   "/home/experiencor/data/pascal/train/images/",
+        "train_annot_folder":   "/home/experiencor/data/pascal/train/annots/",   
+        "cache_name":           "voc_train.pkl",  
+          
+        "train_times":          1,
+        "batch_size":           8,
+        "learning_rate":        1e-5,
+        "nb_epochs":            100,
+        "warmup_epochs":        3,
+        "ignore_thresh":        0.5,
+        "gpus":                 "0",
+
+        "grid_scales":          [1,1,1],
+        "obj_scale":            5,
+        "noobj_scale":          1,
+        "xywh_scale":           1,
+        "class_scale":          1,
+
+        "tensorboard_dir":      "log_voc",
+        "saved_weights_name":   "voc.h5",
+        "debug":                true
+    },
+
+    "valid": {
+        "valid_image_folder":   "/home/experiencor/data/pascal/valid/images/",
+        "valid_annot_folder":   "/home/experiencor/data/pascal/valid/annots/",
+        "cache_name":           "voc_valid.pkl",
+
+        "valid_times":          1
+    }
+}

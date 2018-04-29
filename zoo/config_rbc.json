@@ -18,9 +18,14 @@
         "warmup_epochs":        3,
         "ignore_thresh":        0.5,
         "gpus":                 "0,1",
-        "tensorboard_dir":      "rbc_logs",
 
-        "scales":               [1,5,10],
+        "grid_scales":          [1,1,1],
+        "obj_scale":            5,
+        "noobj_scale":          1,
+        "xywh_scale":           1,
+        "class_scale":          1,
+
+        "tensorboard_dir":      "log_rbc",
         "saved_weights_name":   "rbc.h5",
         "debug":                true
     },

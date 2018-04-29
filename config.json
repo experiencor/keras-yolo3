@@ -18,7 +18,12 @@
         "warmup_epochs":        3,
         "ignore_thresh":        0.5,
         "gpus":                 "0,1",
-        "scales":               [1,2,4],
+
+        "grid_scales":          [1,1,1],
+        "obj_scale":            5,
+        "noobj_scale":          1,
+        "xywh_scale":           1,
+        "class_scale":          1,
 
         "tensorboard_dir":      "logs",
         "saved_weights_name":   "kangaroo.h5",

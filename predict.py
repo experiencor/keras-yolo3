@@ -106,7 +106,7 @@ def _main_(args):
         else:
             image_paths += [input_path]
 
-        image_paths = [inp_file for inp_file in image_paths if (inp_file[-4:] == '.jpg' or inp_file == '.png')]
+        image_paths = [inp_file for inp_file in image_paths if (inp_file[-4:] in ['.jpg', '.png', 'JPEG'])]
 
         # the main loop
         for image_path in image_paths:

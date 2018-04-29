@@ -8,9 +8,9 @@ from voc import parse_voc_annotation
 from yolo import create_yolov3_model, dummy_loss
 from generator import BatchGenerator
 from utils.utils import normalize, evaluate, makedirs
-from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau, TensorBoard
+from keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from keras.optimizers import Adam
-from callbacks import CustomModelCheckpoint
+from callbacks import CustomModelCheckpoint, CustomTensorBoard
 from utils.multi_gpu_model import multi_gpu_model
 import tensorflow as tf
 import keras
@@ -46,8 +46,8 @@ def create_training_instances(
     if len(labels) > 0:
         overlap_labels = set(labels).intersection(set(train_labels.keys()))
 
-        print('Seen labels: \t\t'  + str(train_labels) + '\n')
-        print('Given labels: \t\t' + str(labels))
+        print('Seen labels: \t'  + str(train_labels) + '\n')
+        print('Given labels: \t' + str(labels))
 
         # return None, None, None if some given label is not in the dataset
         if len(overlap_labels) < len(labels):
@@ -73,8 +73,8 @@ def create_callbacks(saved_weights_name, tensorboard_logs, model_to_save):
         verbose     = 1
     )
     checkpoint = CustomModelCheckpoint(
-        saved_weights_name,# + '{epoch:02d}.h5', 
         model_to_save   = model_to_save,
+        filepath        = saved_weights_name,# + '{epoch:02d}.h5', 
         monitor         = 'loss', 
         verbose         = 1, 
         save_best_only  = True, 
@@ -91,7 +91,7 @@ def create_callbacks(saved_weights_name, tensorboard_logs, model_to_save):
         cooldown = 0,
         min_lr   = 0
     )
-    tensorboard = TensorBoard(
+    tensorboard = CustomTensorBoard(
         log_dir                = tensorboard_logs,
         write_graph            = True,
         write_images           = True,
@@ -108,7 +108,11 @@ def create_model(
     multi_gpu, 
     saved_weights_name, 
     lr,
-    scales
+    grid_scales,
+    obj_scale,
+    noobj_scale,
+    xywh_scale,
+    class_scale  
 ):
     if multi_gpu > 1:
         with tf.device('/cpu:0'):
@@ -120,7 +124,11 @@ def create_model(
                 batch_size          = batch_size//multi_gpu, 
                 warmup_batches      = warmup_batches,
                 ignore_thresh       = ignore_thresh,
-                scales              = scales
+                grid_scales         = grid_scales,
+                obj_scale           = obj_scale,
+                noobj_scale         = noobj_scale,
+                xywh_scale          = xywh_scale,
+                class_scale         = class_scale
             )
     else:
         template_model, infer_model = create_yolov3_model(
@@ -131,8 +139,12 @@ def create_model(
             batch_size          = batch_size, 
             warmup_batches      = warmup_batches,
             ignore_thresh       = ignore_thresh,
-            scales              = scales
-        )        
+            grid_scales         = grid_scales,
+            obj_scale           = obj_scale,
+            noobj_scale         = noobj_scale,
+            xywh_scale          = xywh_scale,
+            class_scale         = class_scale
+        )  
 
     # load the pretrained weight if exists, otherwise load the backend weight only
     if os.path.exists(saved_weights_name): 
@@ -169,7 +181,7 @@ def _main_(args):
         config['valid']['cache_name'],
         config['model']['labels']
     )
-    print('\nTraining on the following labels: ' + str(labels))
+    print('\nTraining on: \t' + str(labels) + '\n')
 
     ###############################
     #   Create the generators 
@@ -223,7 +235,11 @@ def _main_(args):
         multi_gpu           = multi_gpu,
         saved_weights_name  = config['train']['saved_weights_name'],
         lr                  = config['train']['learning_rate'],
-        scales              = config['train']['scales'],
+        grid_scales         = config['train']['grid_scales'],
+        obj_scale           = config['train']['obj_scale'],
+        noobj_scale         = config['train']['noobj_scale'],
+        xywh_scale          = config['train']['xywh_scale'],
+        class_scale         = config['train']['class_scale'],
     )
 
     ###############################
