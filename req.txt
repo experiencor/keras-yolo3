@@ -11,7 +11,6 @@ cffi==1.11.5
 chardet==3.0.4
 click==6.7
 clint==0.5.1
-conda==4.4.10
 crontab==0.22.0
 cryptography==2.2.1
 cycler==0.10.0
