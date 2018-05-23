@@ -21,11 +21,6 @@ argparser.add_argument(
     '--weights',
     help='path to weights file')
 
-argparser.add_argument(
-    '-i',
-    '--image',
-    help='path to image file')
-
 def _conv_block(inp, convs, skip=True):
     x = inp
     count = 0
