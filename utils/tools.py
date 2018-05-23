@@ -342,4 +342,4 @@ def draw_boxes(image, boxes, labels, obj_thresh):
                         1e-3 * image.shape[0], 
                         (0,255,0), 2)
         
-    return image      
+    return image
