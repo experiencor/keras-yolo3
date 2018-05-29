@@ -31,6 +31,7 @@ Environment setup:
 If Nvidia GPU is available:
 
 ```pip uninstall tensorflow```
+
 ```pip install tensorflow-gpu```
 
 Detection on single image:
