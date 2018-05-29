@@ -28,6 +28,11 @@ Environment setup:
 
 ```pip install -r requirements.txt```
 
+If Nvidia GPU is available:
+
+```pip uninstall tensorflow```
+```pip install tensorflow-gpu```
+
 Detection on single image:
 
 ```python yolo3_one_file_to_detect_them_all.py -w yolo3.weights -i dog.jpg``` 
