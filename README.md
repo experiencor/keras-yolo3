@@ -2,12 +2,12 @@
 
 ## Dataset and Model
 
-Dataset | mAP | Config | Model | Demo
+Dataset | mAP | Demo | Config | Model
 :---:|:---:|:---:|:---:|:---:
-Kangaroo Detection (1 class) (https://github.com/experiencor/kangaroo) | 95% | check zoo | https://1drv.ms/u/s!ApLdDEW3ut5fgQf0J0QByXNOkxlg | https://youtu.be/URO3UDHvoLY
-Raccoon Detection (1 class) (https://github.com/experiencor/raccoon_dataset) | 98% | check zoo | https://1drv.ms/u/s!ApLdDEW3ut5fgQl3ACoJoUyPB7VM | https://youtu.be/lxLyLIL7OsU
-Red Blood Cell Detection (3 classes) (https://github.com/experiencor/BCCD_Dataset) | 84% | check zoo | https://1drv.ms/u/s!ApLdDEW3ut5fgQjuFVmKc0S0V6d8 | https://imgur.com/a/uJl2lRI
-VOC (20 classes) (http://host.robots.ox.ac.uk/pascal/VOC/voc2012/) | 72% | check zoo | https://1drv.ms/u/s!ApLdDEW3ut5fgQpwIuThlkO7SGaX | https://youtu.be/0RmOI6hcfBI
+Kangaroo Detection (1 class) (https://github.com/experiencor/kangaroo) | 95% | https://youtu.be/URO3UDHvoLY | check zoo | http://bit.do/ekQFj
+Raccoon Detection (1 class) (https://github.com/experiencor/raccoon_dataset) | 98% | https://youtu.be/lxLyLIL7OsU | check zoo | http://bit.do/ekQFf
+Red Blood Cell Detection (3 classes) (https://github.com/experiencor/BCCD_Dataset) | 84% | https://imgur.com/a/uJl2lRI | check zoo | http://bit.do/ekQFc
+VOC (20 classes) (http://host.robots.ox.ac.uk/pascal/VOC/voc2012/) | 72% | https://youtu.be/0RmOI6hcfBI | check zoo | http://bit.do/ekQE5
 
 ## Todo list:
 - [x] Yolo3 detection
