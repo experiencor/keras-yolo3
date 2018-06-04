@@ -4,6 +4,8 @@ import os
 import struct
 import cv2
 import numpy as np
+import multiprocessing
+from multiprocessing import Process, Queue
 from utils.weightreader import WeightReader
 from utils.bbox import BoundBox
 from utils.tools import preprocess_input, decode_netout
@@ -13,6 +15,9 @@ from model.yolo3 import make_yolov3_model
 np.set_printoptions(threshold=np.nan)
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
+
+taskqueue = Queue()
+resqueue = Queue()
 
 # set some parameters
 net_h, net_w = 416, 416
@@ -43,6 +48,26 @@ def post_stream(yolos, boxes, image):
     i = draw_boxes(image, boxes, labels, obj_thresh)
     return i
 
+def detect_loop(model, taskqueue):
+    while True:
+        image = taskqueue.get()
+        if image is None:
+            continue
+        res = model.predict(image)
+        boxes = []
+        frame = post_stream(res, boxes, image)
+        resqueue.put(frame)
+        
+def image_display(resqueue):
+    while True:
+        if resqueue.empty():
+            continue
+        else:
+            image = resqueue.get()
+            cv2.imshow ('image_display', image)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+
 def _main_(args):
     weights_path = args.weights
 
@@ -53,25 +78,19 @@ def _main_(args):
     weight_reader = WeightReader(weights_path)
     weight_reader.load_weights(yolov3)
 
-    # While frame
-    #   pre_stream()
-    #   detect()
-    #   post_stream()
     cap = cv2.VideoCapture(0)
     cap.set(3, 1280) # set the Horizontal resolution
     cap.set(4, 720)
+    p = Process(target=detect_loop, args=(yolov3, taskqueue,))
+    p.start()
+    q = Process(target=image_display, args=(resqueue,))
+    q.start()
     while(True):
         # Capture frame-by-frame
         _, image = cap.read()
         # preprocess the image
-        new_image = preprocess_input(image, net_h, net_w)
-        # run the prediction
-        yolos = yolov3.predict(new_image)
-        boxes = []
-        frame = post_stream(yolos, boxes, image)
-        cv2.imshow('Yolo3', frame)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+        image = preprocess_input(image, net_h, net_w)
+        taskqueue.put(image)
     cap.release()
     cv2.destroyAllWindows()
 
