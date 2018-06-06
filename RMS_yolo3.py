@@ -139,7 +139,7 @@ class mlWorker(Process):
                     # loop over the image IDs and their corresponding set of
                     # results from our model
                     output = []
-                    output = self.extract_result(results,
+                    output = self.extract_result(results, labels,
                         throttle=float(thresholds[imageID]))
                     redisdbSession.set(imageID, json.dumps(output))
                 # sleep for a small amount
@@ -149,17 +149,30 @@ class mlWorker(Process):
                 time.sleep(config.SERVER_SLEEP)
                 continue
 
-    def extract_result(self, results, throttle='0.95'):
+    def extract_result(self, results, labels, throttle='0.95'):
         boxes = []
 
         for i in range(len(yolos)):
             # decode the output of the network
-            boxes += decode_netout(yolos[i][0], anchors[i], obj_thresh, net_h, net_w)
+            boxes.append(decode_netout(yolos[i][0], anchors[i], obj_thresh, net_h, net_w))
         # correct the sizes of the bounding boxes
         correct_yolo_boxes(boxes, image_h, image_w, net_h, net_w)
         # suppress non-maximal boxes
-        do_nms(boxes, nms_thresh)     
-
+        do_nms(boxes, nms_thresh)
+        output = []
+        for box in boxes:
+            label_str = ''
+            label = -1
+            for i in range(len(labels)):
+                if box.classes[i] > obj_thresh:
+                    label_str += labels[i]
+                    label = i
+            if label >= 0:
+                output.append({
+                    bbox: [box.xmin,box.ymin,box.xmax,box.ymax],
+                    label: label_str
+                    score: str(box.get_score())
+                })
         return output
 
     def base64_decode_image(self, a):
