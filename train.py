@@ -4,14 +4,14 @@ import argparse
 import os
 import numpy as np
 import json
-from voc import parse_voc_annotation
-from yolo import create_yolov3_model, dummy_loss
+from .dataset.voc import parse_voc_annotation
+from .model.yolo import create_yolov3_model, dummy_loss
 from generator import BatchGenerator
-from utils.utils import normalize, evaluate, makedirs
+from .utils.utils import normalize, evaluate, makedirs
 from keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from keras.optimizers import Adam
 from callbacks import CustomModelCheckpoint, CustomTensorBoard
-from utils.multi_gpu_model import multi_gpu_model
+from .utils.multi_gpu_model import multi_gpu_model
 import tensorflow as tf
 import keras
 from keras.models import load_model
