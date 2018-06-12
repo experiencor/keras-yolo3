@@ -4,11 +4,14 @@ import os
 import struct
 import cv2
 import numpy as np
-from ..utils.weightreader import WeightReader
-from ..utils.bbox import BoundBox
-from ..utils.tools import preprocess_input, decode_netout
-from ..utils.tools import correct_yolo_boxes, do_nms, draw_boxes
-from ..model.yolo3 import make_yolov3_model
+import sys
+ROOT_DIR = os.path.abspath("../")
+sys.path.append(ROOT_DIR)
+from utils.weightreader import WeightReader
+from utils.bbox import BoundBox
+from utils.tools import preprocess_input, decode_netout
+from utils.tools import correct_yolo_boxes, do_nms, draw_boxes
+from model.yolo3 import make_yolov3_model
 
 np.set_printoptions(threshold=np.nan)
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"

@@ -1,10 +1,12 @@
+import os, sys
 import random
 import argparse
 import numpy as np
-
-from ..dataset.openimg import parse_openimg_annotation
-
 import json
+
+ROOT_DIR = os.path.abspath("../")
+sys.path.append(ROOT_DIR)
+from dataset.openimg import parse_openimg_annotation
 
 def IOU(ann, centroids):
     w, h = ann
@@ -93,8 +95,9 @@ def _main_(argv):
         config = json.loads(config_buffer.read())
 
     train_imgs, train_labels = parse_openimg_annotation(
-        config['train']['train_annot_folder'],
+        config['train']['train_annot_file'],
         config['train']['train_image_folder'],
+        config['train']['label_map'],
         config['train']['cache_name'],
         config['model']['labels']
     )
@@ -103,11 +106,12 @@ def _main_(argv):
     annotation_dims = []
     for image in train_imgs:
         print(image['filename'])
+        print(image)
         for obj in image['object']:
             relative_w = (float(obj['xmax']) - float(obj['xmin']))/image['width']
             relatice_h = (float(obj["ymax"]) - float(obj['ymin']))/image['height']
             annotation_dims.append(tuple(map(float, (relative_w,relatice_h))))
-
+    print(train_imgs)
     annotation_dims = np.array(annotation_dims)
     centroids = run_kmeans(annotation_dims, num_anchors)
 
