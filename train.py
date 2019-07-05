@@ -11,7 +11,7 @@ from utils.utils import normalize, evaluate, makedirs
 from keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from keras.optimizers import Adam
 from callbacks import CustomModelCheckpoint, CustomTensorBoard
-from utils.multi_gpu_model import multi_gpu_model
+# from utils.multi_gpu_model import multi_gpu_model
 import tensorflow as tf
 import keras
 from keras.models import load_model
@@ -105,46 +105,46 @@ def create_model(
     max_grid, batch_size, 
     warmup_batches, 
     ignore_thresh, 
-    multi_gpu, 
+    # multi_gpu,
     saved_weights_name, 
     lr,
     grid_scales,
     obj_scale,
     noobj_scale,
-    xywh_scale,
-    class_scale  
+    xywh_scale#,
+    # class_scale
 ):
-    if multi_gpu > 1:
-        with tf.device('/cpu:0'):
-            template_model, infer_model = create_yolov3_model(
-                nb_class            = nb_class, 
-                anchors             = anchors, 
-                max_box_per_image   = max_box_per_image, 
-                max_grid            = max_grid, 
-                batch_size          = batch_size//multi_gpu, 
-                warmup_batches      = warmup_batches,
-                ignore_thresh       = ignore_thresh,
-                grid_scales         = grid_scales,
-                obj_scale           = obj_scale,
-                noobj_scale         = noobj_scale,
-                xywh_scale          = xywh_scale,
-                class_scale         = class_scale
-            )
-    else:
-        template_model, infer_model = create_yolov3_model(
-            nb_class            = nb_class, 
-            anchors             = anchors, 
-            max_box_per_image   = max_box_per_image, 
-            max_grid            = max_grid, 
-            batch_size          = batch_size, 
-            warmup_batches      = warmup_batches,
-            ignore_thresh       = ignore_thresh,
-            grid_scales         = grid_scales,
-            obj_scale           = obj_scale,
-            noobj_scale         = noobj_scale,
-            xywh_scale          = xywh_scale,
-            class_scale         = class_scale
-        )  
+    # if multi_gpu > 1:
+    #     with tf.device('/cpu:0'):
+    #         template_model, infer_model = create_yolov3_model(
+    #             nb_class            = nb_class,
+    #             anchors             = anchors,
+    #             max_box_per_image   = max_box_per_image,
+    #             max_grid            = max_grid,
+    #             batch_size          = batch_size//multi_gpu,
+    #             warmup_batches      = warmup_batches,
+    #             ignore_thresh       = ignore_thresh,
+    #             grid_scales         = grid_scales,
+    #             obj_scale           = obj_scale,
+    #             noobj_scale         = noobj_scale,
+    #             xywh_scale          = xywh_scale#,
+    #             # class_scale         = class_scale
+    #         )
+    # else:
+    template_model, infer_model = create_yolov3_model(
+        nb_class            = nb_class,
+        anchors             = anchors,
+        max_box_per_image   = max_box_per_image,
+        max_grid            = max_grid,
+        batch_size          = batch_size,
+        warmup_batches      = warmup_batches,
+        ignore_thresh       = ignore_thresh,
+        grid_scales         = grid_scales,
+        obj_scale           = obj_scale,
+        noobj_scale         = noobj_scale,
+        xywh_scale          = xywh_scale#,
+        # class_scale         = class_scale
+    )
 
     # load the pretrained weight if exists, otherwise load the backend weight only
     if os.path.exists(saved_weights_name): 
@@ -153,10 +153,10 @@ def create_model(
     else:
         template_model.load_weights("backend.h5", by_name=True)       
 
-    if multi_gpu > 1:
-        train_model = multi_gpu_model(template_model, gpus=multi_gpu)
-    else:
-        train_model = template_model      
+    # if multi_gpu > 1:
+    #     train_model = multi_gpu_model(template_model, gpus=multi_gpu)
+    # else:
+    train_model = template_model
 
     optimizer = Adam(lr=lr, clipnorm=0.001)
     train_model.compile(loss=dummy_loss, optimizer=optimizer)             
@@ -222,7 +222,7 @@ def _main_(args):
     warmup_batches = config['train']['warmup_epochs'] * (config['train']['train_times']*len(train_generator))   
 
     os.environ['CUDA_VISIBLE_DEVICES'] = config['train']['gpus']
-    multi_gpu = len(config['train']['gpus'].split(','))
+    # multi_gpu = len(config['train']['gpus'].split(','))
 
     train_model, infer_model = create_model(
         nb_class            = len(labels), 
@@ -232,14 +232,14 @@ def _main_(args):
         batch_size          = config['train']['batch_size'], 
         warmup_batches      = warmup_batches,
         ignore_thresh       = config['train']['ignore_thresh'],
-        multi_gpu           = multi_gpu,
+        # multi_gpu           = multi_gpu,
         saved_weights_name  = config['train']['saved_weights_name'],
         lr                  = config['train']['learning_rate'],
         grid_scales         = config['train']['grid_scales'],
         obj_scale           = config['train']['obj_scale'],
         noobj_scale         = config['train']['noobj_scale'],
-        xywh_scale          = config['train']['xywh_scale'],
-        class_scale         = config['train']['class_scale'],
+        xywh_scale          = config['train']['xywh_scale']#,
+        # class_scale         = config['train']['class_scale'],
     )
 
     ###############################
@@ -258,8 +258,8 @@ def _main_(args):
     )
 
     # make a GPU version of infer_model for evaluation
-    if multi_gpu > 1:
-        infer_model = load_model(config['train']['saved_weights_name'])
+    # if multi_gpu > 1:
+    #     infer_model = load_model(config['train']['saved_weights_name'])
 
     ###############################
     #   Run the evaluation

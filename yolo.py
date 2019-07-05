@@ -6,7 +6,7 @@ import tensorflow as tf
 
 class YoloLayer(Layer):
     def __init__(self, anchors, max_grid, batch_size, warmup_batches, ignore_thresh, 
-                    grid_scale, obj_scale, noobj_scale, xywh_scale, class_scale, 
+                    grid_scale, obj_scale, noobj_scale, xywh_scale,
                     **kwargs):
         # make the model settings persistent
         self.ignore_thresh  = ignore_thresh
@@ -16,7 +16,7 @@ class YoloLayer(Layer):
         self.obj_scale      = obj_scale
         self.noobj_scale    = noobj_scale
         self.xywh_scale     = xywh_scale
-        self.class_scale    = class_scale        
+        # self.class_scale    = class_scale
 
         # make a persistent mesh grid
         max_grid_h, max_grid_w = max_grid
@@ -166,8 +166,8 @@ class YoloLayer(Layer):
         wh_delta    = xywh_mask   * (pred_box_wh-true_box_wh) * wh_scale * self.xywh_scale
         conf_delta  = object_mask * (pred_box_conf-true_box_conf) * self.obj_scale + (1-object_mask) * conf_delta * self.noobj_scale
         class_delta = object_mask * \
-                      tf.expand_dims(tf.nn.sparse_softmax_cross_entropy_with_logits(labels=true_box_class, logits=pred_box_class), 4) * \
-                      self.class_scale
+                      tf.expand_dims(tf.nn.sparse_softmax_cross_entropy_with_logits(labels=true_box_class, logits=pred_box_class), 4) #* \
+                      # self.class_scale
 
         loss_xy    = tf.reduce_sum(tf.square(xy_delta),       list(range(1,5)))
         loss_wh    = tf.reduce_sum(tf.square(wh_delta),       list(range(1,5)))
@@ -226,8 +226,8 @@ def create_yolov3_model(
     grid_scales,
     obj_scale,
     noobj_scale,
-    xywh_scale,
-    class_scale
+    xywh_scale #,
+    # class_scale
 ):
     input_image = Input(shape=(None, None, 3)) # net_h, net_w, 3
     true_boxes  = Input(shape=(1, 1, 1, max_box_per_image, 4))
@@ -302,8 +302,8 @@ def create_yolov3_model(
                             grid_scales[0],
                             obj_scale,
                             noobj_scale,
-                            xywh_scale,
-                            class_scale)([input_image, pred_yolo_1, true_yolo_1, true_boxes])
+                            xywh_scale
+                            )([input_image, pred_yolo_1, true_yolo_1, true_boxes])
 
     # Layer 83 => 86
     x = _conv_block(x, [{'filter': 256, 'kernel': 1, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 84}], do_skip=False)
@@ -329,7 +329,7 @@ def create_yolov3_model(
                             obj_scale,
                             noobj_scale,
                             xywh_scale,
-                            class_scale)([input_image, pred_yolo_2, true_yolo_2, true_boxes])
+                            )([input_image, pred_yolo_2, true_yolo_2, true_boxes])
 
     # Layer 95 => 98
     x = _conv_block(x, [{'filter': 128, 'kernel': 1, 'stride': 1, 'bnorm': True, 'leaky': True,   'layer_idx': 96}], do_skip=False)
@@ -352,8 +352,8 @@ def create_yolov3_model(
                             grid_scales[2],
                             obj_scale,
                             noobj_scale,
-                            xywh_scale,
-                            class_scale)([input_image, pred_yolo_3, true_yolo_3, true_boxes]) 
+                            xywh_scale
+                            )([input_image, pred_yolo_3, true_yolo_3, true_boxes])
 
     train_model = Model([input_image, true_boxes, true_yolo_1, true_yolo_2, true_yolo_3], [loss_yolo_1, loss_yolo_2, loss_yolo_3])
     infer_model = Model(input_image, [pred_yolo_1, pred_yolo_2, pred_yolo_3])
