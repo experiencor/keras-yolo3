@@ -46,10 +46,11 @@ def _main_(args):
             if ret_val == True: images += [image]
 
             if (len(images)==batch_size) or (ret_val==False and len(images)>0):
+
                 batch_boxes = get_yolo_boxes(infer_model, images, net_h, net_w, config['model']['anchors'], obj_thresh, nms_thresh)
 
                 for i in range(len(images)):
-                    draw_boxes(images[i], batch_boxes[i], config['model']['labels'], obj_thresh) 
+                    draw_boxes(images[i], batch_boxes[i], config['model']['labels'], obj_thresh)
                     cv2.imshow('video with bboxes', images[i])
                 images = []
             if cv2.waitKey(1) == 27: 
