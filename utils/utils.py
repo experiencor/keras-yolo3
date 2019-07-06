@@ -146,25 +146,77 @@ def correct_yolo_boxes(boxes, image_h, image_w, net_h, net_w):
         boxes[i].ymin = int((boxes[i].ymin - y_offset) / y_scale * image_h)
         boxes[i].ymax = int((boxes[i].ymax - y_offset) / y_scale * image_h)
         
-def do_nms(boxes, nms_thresh):
-    if len(boxes) > 0:
-        nb_class = len(boxes[0].classes)
-    else:
-        return
-        
-    for c in range(nb_class):
-        sorted_indices = np.argsort([-box.classes[c] for box in boxes])
+# def do_nms(boxes, nms_thresh):
+#     if len(boxes) > 0:
+#         nb_class = len(boxes[0].classes)
+#     else:
+#         return
+#
+#     for c in range(nb_class):
+#         sorted_indices = np.argsort([-box.classes[c] for box in boxes])
+#
+#         for i in range(len(sorted_indices)):
+#             index_i = sorted_indices[i]
+#
+#             if boxes[index_i].classes[c] == 0: continue
+#
+#             for j in range(i+1, len(sorted_indices)):
+#                 index_j = sorted_indices[j]
+#
+#                 if bbox_iou(boxes[index_i], boxes[index_j]) >= nms_thresh:
+#                     boxes[index_j].classes[c] = 0
 
-        for i in range(len(sorted_indices)):
-            index_i = sorted_indices[i]
+def non_max_suppression(boxes,nms_thresh):
 
-            if boxes[index_i].classes[c] == 0: continue
+    '''
+    Code originally from https://www.pyimagesearch.com/2015/02/16/faster-non-maximum-suppression-python/
+    '''
+    # if there are no boxes, return an empty list
+    if len(boxes)==0:
+        return []
 
-            for j in range(i+1, len(sorted_indices)):
-                index_j = sorted_indices[j]
+    # initialize the list of picked indexes
+    pick = []
 
-                if bbox_iou(boxes[index_i], boxes[index_j]) >= nms_thresh:
-                    boxes[index_j].classes[c] = 0
+    x1 = np.array([box.xmin for box in boxes])
+    y1 = np.array([box.ymin for box in boxes])
+    x2 = np.array([box.xmax for box in boxes])
+    y2 = np.array([box.ymax for box in boxes])
+
+    # compute the area of the bounding boxes and sort the bounding
+    # boxes by the bottom-right y-coordinate of the bounding box
+    area = (x2 - x1 + 1) * (y2 - y1 + 1)
+    indexes = np.argsort(y2)
+
+    # keep looping while some indexes still remain in the indexes
+    # list
+    while len(indexes) > 0:
+        # grab the last index in the indexes list and add the
+        # index value to the list of picked indexes
+        last = len(indexes) - 1
+        i = indexes[last]
+        pick.append(boxes[i])
+
+        # find the largest (x, y) coordinates for the start of
+        # the bounding box and the smallest (x, y) coordinates
+        # for the end of the bounding box
+
+        xx1 = np.maximum(x1[i], x1[indexes[:last]])
+        yy1 = np.maximum(y1[i], y1[indexes[:last]])
+        xx2 = np.minimum(x2[i], x2[indexes[:last]])
+        yy2 = np.minimum(y2[i], y2[indexes[:last]])
+
+        # compute the width and height of the bounding box
+        w = np.maximum(0, xx2 - xx1 + 1)
+        h = np.maximum(0, yy2 - yy1 + 1)
+
+        # compute the ratio of overlap
+        overlap = (w * h) / area[indexes[:last]]
+        # delete all indexes from the index list that have
+        indexes = np.delete(indexes, np.concatenate(([last],
+                                               np.where(overlap > nms_thresh)[0])))
+    # return only the bounding boxes that were picked
+    return pick
 
 def decode_netout(netout, anchors, obj_thresh, net_h, net_w):
     grid_h, grid_w = netout.shape[:2]
@@ -183,26 +235,48 @@ def decode_netout(netout, anchors, obj_thresh, net_h, net_w):
         row = i // grid_w
         col = i % grid_w
         
+        # for b in range(nb_box):
+        #     # 4th element is objectness score
+        #     objectness = netout[row, col, b, 4]
+        #
+        #     if(objectness <= obj_thresh): continue
+        #
+        #     # first 4 elements are x, y, w, and h
+        #     x, y, w, h = netout[row,col,b,:4]
+        #
+        #     x = (col + x) / grid_w # center position, unit: image width
+        #     y = (row + y) / grid_h # center position, unit: image height
+        #     w = anchors[2 * b + 0] * np.exp(w) / net_w # unit: image width
+        #     h = anchors[2 * b + 1] * np.exp(h) / net_h # unit: image height
+        #
+        #     # last elements are class probabilities
+        #     classes = netout[row,col,b,5:]
+        #
+        #     box = BoundBox(x-w/2, y-h/2, x+w/2, y+h/2, objectness, classes)
+        #
+        #     boxes.append(box)
+
         for b in range(nb_box):
             # 4th element is objectness score
             objectness = netout[row, col, b, 4]
-            
-            if(objectness <= obj_thresh): continue
-            
-            # first 4 elements are x, y, w, and h
-            x, y, w, h = netout[row,col,b,:4]
-
-            x = (col + x) / grid_w # center position, unit: image width
-            y = (row + y) / grid_h # center position, unit: image height
-            w = anchors[2 * b + 0] * np.exp(w) / net_w # unit: image width
-            h = anchors[2 * b + 1] * np.exp(h) / net_h # unit: image height  
-            
             # last elements are class probabilities
-            classes = netout[row,col,b,5:]
-            
-            box = BoundBox(x-w/2, y-h/2, x+w/2, y+h/2, objectness, classes)
+            classes = netout[row, col, b, 5:] * objectness
 
-            boxes.append(box)
+            if (np.max(classes) > obj_thresh):
+
+                # first 4 elements are x, y, w, and h
+                x, y, w, h = netout[row, col, b, :4]
+
+                x = (col + x) / grid_w  # center position, unit: image width
+                y = (row + y) / grid_h  # center position, unit: image height
+                w = anchors[2 * b + 0] * np.exp(w) / net_w  # unit: image width
+                h = anchors[2 * b + 1] * np.exp(h) / net_h  # unit: image height
+
+
+
+                box = BoundBox(x - w / 2, y - h / 2, x + w / 2, y + h / 2, objectness, classes)
+
+                boxes.append(box)
 
     return boxes
 
@@ -256,9 +330,9 @@ def get_yolo_boxes(model, images, net_h, net_w, anchors, obj_thresh, nms_thresh)
         correct_yolo_boxes(boxes, image_h, image_w, net_h, net_w)
 
         # suppress non-maximal boxes
-        do_nms(boxes, nms_thresh)        
-           
-        batch_boxes[i] = boxes
+        # do_nms(boxes, nms_thresh)
+        batch_boxes[i] = non_max_suppression(boxes,nms_thresh)
+        # batch_boxes[i] = boxes
 
     return batch_boxes        
 

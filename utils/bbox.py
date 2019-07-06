@@ -62,13 +62,17 @@ def draw_boxes(image, boxes, labels, obj_thresh, quiet=True):
     for box in boxes:
         label_str = ''
         label = -1
-        
-        for i in range(len(labels)):
-            if box.classes[i] > obj_thresh:
-                if label_str != '': label_str += ', '
-                label_str += (labels[i] + ' ' + str(round(box.get_score()*100, 2)) + '%')
-                label = i
-            if not quiet: print(label_str)
+        #
+        # for i in range(len(labels)):
+        #     if box.classes[i] > obj_thresh:
+        #         if label_str != '': label_str += ', '
+        #         label_str += (labels[i] + ' ' + str(round(box.get_score()*100, 2)) + '%')
+        #         label = i
+        #     if not quiet: print(label_str)
+
+        # if np.max(box.classes)>obj_thresh:
+        label = np.argmax(box.classes)
+        label_str += (labels[label] + ' ' + str(round(box.get_score() * 100, 2)) + '%')
 
         if label >= 0:
             text_size = cv2.getTextSize(label_str, cv2.FONT_HERSHEY_SIMPLEX, 1.1e-3 * image.shape[0], 5)
