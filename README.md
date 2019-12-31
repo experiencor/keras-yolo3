@@ -4,10 +4,10 @@
 
 Dataset | mAP | Demo | Config | Model
 :---:|:---:|:---:|:---:|:---:
-Kangaroo Detection (1 class) (https://github.com/experiencor/kangaroo) | 95% | https://youtu.be/URO3UDHvoLY | check zoo | http://bit.do/ekQFj
-Raccoon Detection (1 class) (https://github.com/experiencor/raccoon_dataset) | 98% | https://youtu.be/lxLyLIL7OsU | check zoo | http://bit.do/ekQFf
-Red Blood Cell Detection (3 classes) (https://github.com/experiencor/BCCD_Dataset) | 84% | https://imgur.com/a/uJl2lRI | check zoo | http://bit.do/ekQFc
-VOC (20 classes) (http://host.robots.ox.ac.uk/pascal/VOC/voc2012/) | 72% | https://youtu.be/0RmOI6hcfBI | check zoo | http://bit.do/ekQE5
+Kangaroo Detection (1 class) (https://github.com/experiencor/kangaroo) | 95% | https://youtu.be/URO3UDHvoLY | check zoo | https://bit.ly/39rLNoE
+Raccoon Detection (1 class) (https://github.com/experiencor/raccoon_dataset) | 98% | https://youtu.be/lxLyLIL7OsU | check zoo | https://bit.ly/39rLNoE
+Red Blood Cell Detection (3 classes) (https://github.com/experiencor/BCCD_Dataset) | 84% | https://imgur.com/a/uJl2lRI | check zoo | https://bit.ly/39rLNoE
+VOC (20 classes) (http://host.robots.ox.ac.uk/pascal/VOC/voc2012/) | 72% | https://youtu.be/0RmOI6hcfBI | check zoo | https://bit.ly/39rLNoE
 
 ## Todo list:
 - [x] Yolo3 detection
@@ -85,7 +85,7 @@ The ```labels``` setting lists the labels to be trained on. Only images, which h
 
 Download pretrained weights for backend at:
 
-https://1drv.ms/u/s!ApLdDEW3ut5fgQXa7GzSlG-mdza6
+https://bit.ly/39rLNoE
 
 **This weights must be put in the root folder of the repository. They are the pretrained weights for the backend only and will be loaded during model creation. The code does not work without this weights.**
 
