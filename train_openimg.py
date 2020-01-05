@@ -4,7 +4,7 @@ import argparse
 import os
 import numpy as np
 import json
-from .dataset.voc import parse_voc_annotation
+from .dataset.openimg import parse_openimg_annotation
 from .model.yolo import create_yolov3_model, dummy_loss
 from generator import BatchGenerator
 from .utils.utils import normalize, evaluate, makedirs
@@ -17,8 +17,9 @@ import keras
 from keras.models import load_model
 
 def create_training_instances(
-    train_annot_folder,
+    train_annot_file,
     train_image_folder,
+    label_map,
     train_cache,
     valid_annot_folder,
     valid_image_folder,
@@ -26,11 +27,11 @@ def create_training_instances(
     labels,
 ):
     # parse annotations of the training set
-    train_ints, train_labels = parse_voc_annotation(train_annot_folder, train_image_folder, train_cache, labels)
+    train_ints, train_labels = parse_openimg_annotation(train_annot_file, train_image_folder, label_map, train_cache, labels)
 
     # parse annotations of the validation set, if any, otherwise split the training set
     if os.path.exists(valid_annot_folder):
-        valid_ints, valid_labels = parse_voc_annotation(valid_annot_folder, valid_image_folder, valid_cache, labels)
+        valid_ints, valid_labels = parse_openimg_annotation(valid_annot_file, valid_image_folder, label_map, valid_cache, labels)
     else:
         print("valid_annot_folder not exists. Spliting the trainining set.")
 
@@ -173,10 +174,11 @@ def _main_(args):
     #   Parse the annotations 
     ###############################
     train_ints, valid_ints, labels, max_box_per_image = create_training_instances(
-        config['train']['train_annot_folder'],
+        config['train']['train_annot_file'],
         config['train']['train_image_folder'],
+        config['train']['label_map'],
         config['train']['cache_name'],
-        config['valid']['valid_annot_folder'],
+        config['valid']['valid_annot_file'],
         config['valid']['valid_image_folder'],
         config['valid']['cache_name'],
         config['model']['labels']

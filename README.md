@@ -22,7 +22,25 @@ VOC (20 classes) (http://host.robots.ox.ac.uk/pascal/VOC/voc2012/) | 72% | https
 
 Grab the pretrained weights of yolo3 from https://pjreddie.com/media/files/yolov3.weights.
 
+```wget -c https://pjreddie.com/media/files/yolov3.weights```
+
+Environment setup:
+
+```pip install -r requirements.txt```
+
+If Nvidia GPU is available:
+
+```pip uninstall tensorflow```
+
+```pip install tensorflow-gpu```
+
+Detection on single image:
+
 ```python yolo3_one_file_to_detect_them_all.py -w yolo3.weights -i dog.jpg``` 
+
+If your webcam is available:
+
+```python yolo3_cam.py -w yolov3.weights``` 
 
 ## Training
 

@@ -1,0 +1,41 @@
+{
+    "model" : {
+        "min_input_size":       448,
+        "max_input_size":       448,
+        "anchors":              [55,69, 75,234, 133,240, 136,129, 142,363, 203,290, 228,184, 285,359, 341,260],
+        "labels":               ["Person"]
+    },
+
+    "train": {
+        "train_image_folder":   "/data1/openimages/600c_bbox/images/train/",
+        "train_annot_file":     "/data1/openimages/600c_bbox/annotation/train-annotations-bbox.csv",
+        "train_annot_folder":   "/data1/openimages/600c_bbox/annotation/",
+        "cache_name":           "cache/openimg_train.pkl",
+        "label_map":            "/data1/openimages/600c_bbox/annotation/class-descriptions-boxable.csv",
+        "train_times":          8,
+        "batch_size":           16,
+        "learning_rate":        1e-4,
+        "nb_epochs":            100,
+        "warmup_epochs":        3,
+        "ignore_thresh":        0.5,
+        "gpus":                 "0,1",
+
+        "grid_scales":          [1,1,1],
+        "obj_scale":            5,
+        "noobj_scale":          1,
+        "xywh_scale":           1,
+        "class_scale":          1,
+
+        "tensorboard_dir":      "logs",
+        "saved_weights_name":   "weights/openimg_600c.h5",
+        "debug":                true
+    },
+
+    "valid": {
+        "valid_image_folder":   "/data1/openimages/600c_bbox/images/validation/",
+        "valid_annot_folder":   "/data1/openimages/600c_bbox/annotation/",
+	"train_annot_file":     "validation-annotations-bbox.csv",
+        "cache_name":           "openimg_val.pkl",
+        "valid_times":          1
+    }
+}

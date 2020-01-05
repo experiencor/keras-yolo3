@@ -1,0 +1,38 @@
+{
+    "model" : {
+        "min_input_size":       352,
+        "max_input_size":       448,
+        "anchors":              [2,5, 2,7, 3,8, 4,11, 5,15, 7,20, 11,27, 16,46, 29,59],
+        "labels":               ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9","A", "B", "C", "D", "E", "F",
+				 "G", "H", "I", "J", "K", "L", "M","N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "carPlate"]
+    },
+
+    "train": {
+        "train_image_folder":   "/workspace/carPlateDataset/20180607/JPEGImages/",
+        "train_annot_folder":   "/workspace/carPlateDataset/20180607/Annotations/",
+        "cache_name":           "cache/carplate_train.pkl",
+
+        "train_times":          8,
+        "batch_size":           12,
+        "learning_rate":        1e-4,
+        "nb_epochs":            100,
+        "warmup_epochs":        3,
+        "ignore_thresh":        0.5,
+        "gpus":                 "0",
+        "grid_scales":          [1,1,1],
+        "obj_scale":            5,
+        "noobj_scale":          1,
+        "xywh_scale":           1,
+        "class_scale":          1,
+        "tensorboard_dir":      "logs",
+        "saved_weights_name":   "weights/carplate.h5",
+        "debug":                false
+    },
+    "valid": {
+        "valid_image_folder":   "",
+        "valid_annot_folder":   "",
+        "cache_name":           "",
+
+        "valid_times":          1
+    }
+}
