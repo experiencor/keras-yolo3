@@ -24,7 +24,7 @@ def _main_(args):
     #   Set some parameter
     ###############################       
     net_h, net_w = 416, 416 # a multiple of 32, the smaller the faster
-    obj_thresh, nms_thresh = 0.5, 0.45
+    obj_thresh, nms_thresh = 0.80, 0.01
 
     ###############################
     #   Load the model
@@ -65,7 +65,7 @@ def _main_(args):
 
         video_writer = cv2.VideoWriter(video_out,
                                cv2.VideoWriter_fourcc(*'MPEG'), 
-                               50.0, 
+                               30.0, 
                                (frame_w, frame_h))
         # the main loop
         batch_size  = 1
