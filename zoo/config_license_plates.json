@@ -1,0 +1,42 @@
+{
+    "model" : {
+        "min_input_size":       416,
+        "max_input_size":       416,
+        "anchors":              [15,6, 18,8, 22,9, 27,11, 32,13, 41,17, 54,21, 66,27, 82,33],
+        "labels":               ["license-plate"]
+    },
+
+    "train": {
+        "train_image_folder":   "dataset/train/images/",
+        "train_annot_folder":   "dataset/train/annots/",
+        "cache_name":           "license_plate.pkl",
+
+        "pretrained_weights":   "pretrained_lp.h5", 
+
+        "train_times":          4,
+        "batch_size":           16,
+        "learning_rate":        1e-4,
+        "nb_epochs":            100,
+        "warmup_epochs":        3,
+        "ignore_thresh":        0.6,
+        "gpus":                 "0",
+
+        "grid_scales":          [1,1,1],
+        "obj_scale":            5,
+        "noobj_scale":          1,
+        "xywh_scale":           1,
+        "class_scale":          1,
+
+        "tensorboard_dir":      "logs",
+        "saved_weights_name":   "license_plate.h5",
+        "debug":                true
+    },
+
+    "valid": {
+        "valid_image_folder":   "dataset/valid/images/",
+        "valid_annot_folder":   "dataset/valid/annots/",
+        "cache_name":           "valid.pkl",
+
+        "valid_times":          1
+    }
+}
