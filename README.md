@@ -116,6 +116,8 @@ By the end of this process, the code will write the weights of the best model to
 
 It carries out detection on the image and write the image with detected bounding boxes to the same folder.
 
+If you wish to change the object threshold or IOU threshold, you can do it by altering `obj_thresh` and `nms_thresh` variables. By default, they are set to `0.5` and `0.45` respectively.
+
 ## Evaluation
 
 `python evaluate.py -c config.json`
