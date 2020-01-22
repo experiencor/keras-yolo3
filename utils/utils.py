@@ -150,7 +150,7 @@ def do_nms(boxes, nms_thresh):
     if len(boxes) > 0:
         nb_class = len(boxes[0].classes)
     else:
-        return []
+        return
         
     for c in range(nb_class):
         sorted_indices = np.argsort([-box.classes[c] for box in boxes])
@@ -165,8 +165,6 @@ def do_nms(boxes, nms_thresh):
 
                 if bbox_iou(boxes[index_i], boxes[index_j]) >= nms_thresh:
                     boxes[index_j].classes[c] = 0
-
-    return boxes
 
 def decode_netout(netout, anchors, obj_thresh, net_h, net_w):
     grid_h, grid_w = netout.shape[:2]
@@ -258,7 +256,7 @@ def get_yolo_boxes(model, images, net_h, net_w, anchors, obj_thresh, nms_thresh)
         correct_yolo_boxes(boxes, image_h, image_w, net_h, net_w)
 
         # suppress non-maximal boxes
-        boxes = do_nms(boxes, nms_thresh)        
+        do_nms(boxes, nms_thresh)        
            
         batch_boxes[i] = boxes
 
