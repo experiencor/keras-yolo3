@@ -19,6 +19,16 @@ VOC (20 classes) (http://host.robots.ox.ac.uk/pascal/VOC/voc2012/) | 72% | https
 - [ ] Evaluation on COCO
 - [ ] MobileNet, DenseNet, ResNet, and VGG backends
 
+## Installing
+
+To install the dependencies, run
+```bash
+pip install -r requirements.txt
+```
+And for the GPU to work, make sure you've got the drivers installed beforehand (CUDA).
+
+It has been tested to work with Python 2.7.13 and 3.5.3.
+
 ## Detection
 
 Grab the pretrained weights of yolo3 from https://pjreddie.com/media/files/yolov3.weights.
