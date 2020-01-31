@@ -16,6 +16,15 @@ import tensorflow as tf
 import keras
 from keras.models import load_model
 
+
+config = tf.compat.v1.ConfigProto(
+    gpu_options = tf.compat.v1.GPUOptions(per_process_gpu_memory_fraction=0.9)
+    # device_count = {'GPU': 1}
+)
+config.gpu_options.allow_growth = True
+session = tf.compat.v1.Session(config=config)
+tf.compat.v1.keras.backend.set_session(session)
+
 def create_training_instances(
     train_annot_folder,
     train_image_folder,
@@ -68,7 +77,7 @@ def create_callbacks(saved_weights_name, tensorboard_logs, model_to_save):
     early_stop = EarlyStopping(
         monitor     = 'loss', 
         min_delta   = 0.01, 
-        patience    = 5, 
+        patience    = 7, 
         mode        = 'min', 
         verbose     = 1
     )

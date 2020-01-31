@@ -5,6 +5,7 @@
 Dataset | mAP | Demo | Config | Model
 :---:|:---:|:---:|:---:|:---:
 Kangaroo Detection (1 class) (https://github.com/experiencor/kangaroo) | 95% | https://youtu.be/URO3UDHvoLY | check zoo | https://bit.ly/39rLNoE
+License Plate Detection (European in Romania) (1 class) (https://github.com/RobertLucian/license-plate-dataset) | 90% | https://youtu.be/HrqzIXFVCRo | check zoo | https://bit.ly/2tIpvPl
 Raccoon Detection (1 class) (https://github.com/experiencor/raccoon_dataset) | 98% | https://youtu.be/lxLyLIL7OsU | check zoo | https://bit.ly/39rLNoE
 Red Blood Cell Detection (3 classes) (https://github.com/experiencor/BCCD_Dataset) | 84% | https://imgur.com/a/uJl2lRI | check zoo | https://bit.ly/39rLNoE
 VOC (20 classes) (http://host.robots.ox.ac.uk/pascal/VOC/voc2012/) | 72% | https://youtu.be/0RmOI6hcfBI | check zoo | https://bit.ly/39rLNoE
@@ -17,6 +18,16 @@ VOC (20 classes) (http://host.robots.ox.ac.uk/pascal/VOC/voc2012/) | 72% | https
 - [x] Evaluation on VOC
 - [ ] Evaluation on COCO
 - [ ] MobileNet, DenseNet, ResNet, and VGG backends
+
+## Installing
+
+To install the dependencies, run
+```bash
+pip install -r requirements.txt
+```
+And for the GPU to work, make sure you've got the drivers installed beforehand (CUDA).
+
+It has been tested to work with Python 2.7.13 and 3.5.3.
 
 ## Detection
 
@@ -41,6 +52,15 @@ Organize the dataset into 4 folders:
 + valid_annot_folder <= the folder that contains the validation annotations in VOC format.
     
 There is a one-to-one correspondence by file name between images and annotations. If the validation set is empty, the training set will be automatically splitted into the training set and validation set using the ratio of 0.8.
+
+Also, if you've got the dataset split into 2 folders such as one for images and the other one for annotations and you need to set a custom size for the validation set, use `create_validation_set.sh` script to that. The script expects the following parameters in the following order:
+```bash
+./create_validation_set.sh $param1 $param2 $param3 $param4
+# 1st param - folder where the images are found
+# 2nd param - folder where the annotations are found
+# 3rd param - number of random choices (aka the size of the validation set in absolute value)
+# 4th param - folder where validation images/annots end up (must have images/annots folders inside the given directory as the 4th param)
+```
 
 ### 2. Edit the configuration file
 The configuration file is a json file, which looks like this:
@@ -105,6 +125,8 @@ By the end of this process, the code will write the weights of the best model to
 `python predict.py -c config.json -i /path/to/image/or/video`
 
 It carries out detection on the image and write the image with detected bounding boxes to the same folder.
+
+If you wish to change the object threshold or IOU threshold, you can do it by altering `obj_thresh` and `nms_thresh` variables. By default, they are set to `0.5` and `0.45` respectively.
 
 ## Evaluation
 
