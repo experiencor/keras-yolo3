@@ -41,7 +41,7 @@ def create_training_instances(
     if os.path.exists(valid_annot_folder):
         valid_ints, valid_labels = parse_voc_annotation(valid_annot_folder, valid_image_folder, valid_cache, labels)
     else:
-        print("valid_annot_folder not exists. Spliting the trainining set.")
+        print("valid_annot_folder not exists. Splitting the training set.")
 
         train_valid_split = int(0.8*len(train_ints))
         np.random.seed(0)
