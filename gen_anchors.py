@@ -1,8 +1,9 @@
+import sys
 import random
 import argparse
 import numpy as np
 
-from voc import parse_voc_annotation
+from voc import parse_voc_annotation, parse_boxpoints_annotation
 import json
 
 def IOU(ann, centroids):
@@ -86,26 +87,56 @@ def run_kmeans(ann_dims, anchor_num):
 
 def _main_(argv):
     config_path = args.conf
-    num_anchors = args.anchors
+    num_anchors = int(args.anchors)
+    xywh = not args.xy
 
     with open(config_path) as config_buffer:
         config = json.loads(config_buffer.read())
 
-    train_imgs, train_labels = parse_voc_annotation(
-        config['train']['train_annot_folder'],
-        config['train']['train_image_folder'],
-        config['train']['cache_name'],
-        config['model']['labels']
-    )
+    if xywh:
+        print('xywh format parser')
+        train_imgs, train_labels = parse_voc_annotation(
+            config['train']['train_annot_folder'],
+            config['train']['train_image_folder'],
+            config['train']['cache_name'],
+            config['model']['labels']
+        )
+    else:
+        print('boxpoints format parser')
+        train_imgs, train_labels = parse_boxpoints_annotation(
+            config['train']['train_annot_folder'],
+            config['train']['train_image_folder'],
+            config['train']['cache_name'],
+            config['model']['labels']
+        )
 
     # run k_mean to find the anchors
     annotation_dims = []
+    print(len(train_imgs))
+    if len(train_imgs) < 1:
+        print('empty train_imgs')
+        sys.exit()
     for image in train_imgs:
         print(image['filename'])
-        for obj in image['object']:
-            relative_w = (float(obj['xmax']) - float(obj['xmin']))/image['width']
-            relatice_h = (float(obj["ymax"]) - float(obj['ymin']))/image['height']
-            annotation_dims.append(tuple(map(float, (relative_w,relatice_h))))
+        if xywh:
+             for image in train_imgs:
+                print(image['filename'])
+                for obj in image['object']:
+                    relative_w = (float(obj['xmax']) - float(obj['xmin']))/image['width']
+                    relatice_h = (float(obj["ymax"]) - float(obj['ymin']))/image['height']
+                    annotation_dims.append(tuple(map(float, (relative_w,relatice_h))))
+        else:
+            for image in train_imgs:
+                print(image['filename'])
+                for obj in image['object']:
+                    # numpy.linalg.norm(a-b)
+                    relative_w = float(np.linalg.norm(
+                        np.array((float(obj["x1"]),float(obj["y1"])))-np.array((float(obj["x2"]),float(obj["y2"])))
+                        ))/image['width']
+                    relatice_h = float(np.linalg.norm(
+                        np.array((float(obj["x1"]),float(obj["y1"])))-np.array((float(obj["x3"]),float(obj["y3"])))
+                        ))/image['height']
+                    annotation_dims.append(tuple(map(float, (relative_w,relatice_h))))
 
     annotation_dims = np.array(annotation_dims)
     centroids = run_kmeans(annotation_dims, num_anchors)
@@ -127,6 +158,8 @@ if __name__ == '__main__':
         '--anchors',
         default=9,
         help='number of anchors to use')
-
+    argparser.add_argument(
+        '-xy',
+        action="store_true")
     args = argparser.parse_args()
     _main_(args)
