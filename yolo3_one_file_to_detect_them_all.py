@@ -261,10 +261,10 @@ def preprocess_input(image, net_h, net_w):
 
     # determine the new size of the image
     if (float(net_w)/new_w) < (float(net_h)/new_h):
-        new_h = (new_h * net_w)/new_w
+        new_h = (new_h * net_w)//new_w
         new_w = net_w
     else:
-        new_w = (new_w * net_h)/new_h
+        new_w = (new_w * net_h)//new_h
         new_h = net_h
 
     # resize the image to the new size
