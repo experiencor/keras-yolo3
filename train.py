@@ -5,6 +5,7 @@ import os
 import numpy as np
 import json
 from voc import parse_voc_annotation
+from coco import parse_coco_annotation
 from yolo import create_yolov3_model, dummy_loss
 from generator import BatchGenerator
 from utils.utils import normalize, evaluate, makedirs
@@ -33,13 +34,20 @@ def create_training_instances(
     valid_image_folder,
     valid_cache,
     labels,
+    annot_type='voc'
 ):
     # parse annotations of the training set
-    train_ints, train_labels = parse_voc_annotation(train_annot_folder, train_image_folder, train_cache, labels)
+    if annot_type == 'coco':
+        train_ints, train_labels = parse_coco_annotation(train_annot_folder, train_image_folder, train_cache, labels)
+    else:
+        train_ints, train_labels = parse_voc_annotation(train_annot_folder, train_image_folder, train_cache, labels)
 
     # parse annotations of the validation set, if any, otherwise split the training set
     if os.path.exists(valid_annot_folder):
-        valid_ints, valid_labels = parse_voc_annotation(valid_annot_folder, valid_image_folder, valid_cache, labels)
+        if annot_type == 'coco':
+            valid_ints, valid_labels = parse_coco_annotation(valid_annot_folder, valid_image_folder, valid_cache, labels)
+        else:
+            valid_ints, valid_labels = parse_voc_annotation(valid_annot_folder, valid_image_folder, valid_cache, labels)
     else:
         print("valid_annot_folder not exists. Spliting the trainining set.")
 
