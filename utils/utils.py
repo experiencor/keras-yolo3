@@ -256,8 +256,8 @@ def get_yolo_boxes(model, images, net_h, net_w, anchors, obj_thresh, nms_thresh)
         correct_yolo_boxes(boxes, image_h, image_w, net_h, net_w)
 
         # suppress non-maximal boxes
-        do_nms(boxes, nms_thresh)        
-           
+        do_nms(boxes, nms_thresh)
+        boxes = remove_zeros_after_nms(boxes, obj_thresh)
         batch_boxes[i] = boxes
 
     return batch_boxes        
@@ -321,3 +321,16 @@ def _softmax(x, axis=-1):
     e_x = np.exp(x)
     
     return e_x / e_x.sum(axis, keepdims=True)
+
+def remove_zeros_after_nms(boxes, obj_thresh):
+    new_boxes = []
+    for box in boxes:
+        nb_class = len(box.classes)
+        has_confident = False
+        for cls in range(nb_class):
+            if box.classes[cls] > obj_thresh:
+                has_confident = True
+                break
+        if has_confident:
+            new_boxes.append(box)
+    return new_boxes
