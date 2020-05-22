@@ -17,7 +17,7 @@
         "nb_epochs":            5,
         "warmup_epochs":        1,
         "ignore_thresh":        0.5,
-        "gpus":                 "0",
+        "gpus":                 "0,1",
         "pretrained_weights":   "/kaggle/input/yolo-models/backend.h5",
 
         "grid_scales":          [1,1,1],
@@ -27,7 +27,7 @@
         "class_scale":          1,
 
         "tensorboard_dir":      "logs",
-        "saved_weights_name":   "/kaggle/input/yolo-trained/trained.h5",
+        "saved_weights_name":   "",
         "debug":                true
     },
 
