@@ -272,6 +272,8 @@ def run(args):
     if multi_gpu > 1:
         infer_model = load_model(config['train']['saved_weights_name'])
 
+    train_model.save('trained.h5')
+
     ###############################
     #   Run the evaluation
     ###############################   
