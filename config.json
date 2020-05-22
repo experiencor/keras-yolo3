@@ -3,21 +3,22 @@
         "min_input_size":       288,
         "max_input_size":       448,
         "anchors":              [55,69, 75,234, 133,240, 136,129, 142,363, 203,290, 228,184, 285,359, 341,260],
-        "labels":               ["kangaroo"]
+        "labels":               ["car", "truck", "train", "person", "building", "traffic light", "motorbike"]
     },
 
     "train": {
-        "train_image_folder":   "/home/andy/Desktop/github/kangaroo/images/",
-        "train_annot_folder":   "/home/andy/Desktop/github/kangaroo/annots/",
-        "cache_name":           "kangaroo_train.pkl",
+        "train_image_folder":   "/kaggle/input/aerial/aerial/train/",
+        "train_annot_folder":   "/kaggle/input/aerial/aerial/train_annot/",
+        "cache_name":           "train.pkl",
 
-        "train_times":          8,
+        "train_times":          1,
         "batch_size":           16,
         "learning_rate":        1e-4,
-        "nb_epochs":            100,
-        "warmup_epochs":        3,
+        "nb_epochs":            5,
+        "warmup_epochs":        1,
         "ignore_thresh":        0.5,
-        "gpus":                 "0,1",
+        "gpus":                 "0",
+        "pretrained_weights":   "/kaggle/input/yolo-models/backend.h5",
 
         "grid_scales":          [1,1,1],
         "obj_scale":            5,
@@ -26,15 +27,14 @@
         "class_scale":          1,
 
         "tensorboard_dir":      "logs",
-        "saved_weights_name":   "kangaroo.h5",
+        "saved_weights_name":   "/kaggle/input/yolo-trained/trained.h5",
         "debug":                true
     },
 
     "valid": {
-        "valid_image_folder":   "",
-        "valid_annot_folder":   "",
-        "cache_name":           "",
-
+        "valid_image_folder":   "/kaggle/input/aerial/aerial/valid/",
+        "valid_annot_folder":   "/kaggle/input/aerial/aerial/valid_annot/",
+        "cache_name":           "valid.pkl",
         "valid_times":          1
     }
 }

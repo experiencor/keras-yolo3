@@ -172,8 +172,10 @@ def create_model(
 
     return train_model, infer_model
 
-def _main_(args):
-    config_path = args.conf
+#def _main_(args):
+def run(args):
+    #config_path = args.conf
+    config_path = args
 
     with open(config_path) as config_buffer:    
         config = json.loads(config_buffer.read())
@@ -281,9 +283,9 @@ def _main_(args):
         print(labels[label] + ': {:.4f}'.format(average_precision))
     print('mAP: {:.4f}'.format(sum(average_precisions.values()) / len(average_precisions)))           
 
-if __name__ == '__main__':
-    argparser = argparse.ArgumentParser(description='train and evaluate YOLO_v3 model on any dataset')
-    argparser.add_argument('-c', '--conf', help='path to configuration file')   
-
-    args = argparser.parse_args()
-    _main_(args)
+#if __name__ == '__main__':
+#    argparser = argparse.ArgumentParser(description='train and evaluate YOLO_v3 model on any dataset')
+#    argparser.add_argument('-c', '--conf', help='path to configuration file')   
+#
+#    args = argparser.parse_args()
+#    _main_(args)
