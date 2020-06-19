@@ -415,7 +415,7 @@ def _main_(args):
 
     for i in range(len(yolos)):
         # decode the output of the network
-        boxes += decode_netout(yolos[i][0], anchors[i], obj_thresh, nms_thresh, net_h, net_w)
+        boxes += decode_netout(yolos[i][0], anchors[i], obj_thresh, nms_thresh, net_h= 416, net_w= 416)
 
     # correct the sizes of the bounding boxes
     correct_yolo_boxes(boxes, image_h, image_w, net_h, net_w)
