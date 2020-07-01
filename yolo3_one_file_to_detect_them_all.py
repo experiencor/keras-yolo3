@@ -1,11 +1,9 @@
 import argparse
 import os
 import numpy as np
-from keras.layers import Conv2D, Input, BatchNormalization, LeakyReLU, ZeroPadding2D, UpSampling2D
-from keras.layers.merge import add, concatenate
-from keras.models import Model
 import struct
 import cv2
+import tensorflow as tf
 
 np.set_printoptions(threshold=np.nan)
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
@@ -117,15 +115,15 @@ def _conv_block(inp, convs, skip=True):
             skip_connection = x
         count += 1
         
-        if conv['stride'] > 1: x = ZeroPadding2D(((1,0),(1,0)))(x) # peculiar padding as darknet prefer left and top
-        x = Conv2D(conv['filter'], 
+        if conv['stride'] > 1: x = tf.keras.layers.ZeroPadding2D(((1,0),(1,0)))(x) # peculiar padding as darknet prefer left and top
+        x = tf.keras.layers.Conv2D(conv['filter'], 
                    conv['kernel'], 
                    strides=conv['stride'], 
                    padding='valid' if conv['stride'] > 1 else 'same', # peculiar padding as darknet prefer left and top
                    name='conv_' + str(conv['layer_idx']), 
                    use_bias=False if conv['bnorm'] else True)(x)
-        if conv['bnorm']: x = BatchNormalization(epsilon=0.001, name='bnorm_' + str(conv['layer_idx']))(x)
-        if conv['leaky']: x = LeakyReLU(alpha=0.1, name='leaky_' + str(conv['layer_idx']))(x)
+        if conv['bnorm']: x = tf.keras.layers.BatchNormalization(epsilon=0.001, name='bnorm_' + str(conv['layer_idx']))(x)
+        if conv['leaky']: x = tf.keras.layers.LeakyReLU(alpha=0.1, name='leaky_' + str(conv['layer_idx']))(x)
 
     return add([skip_connection, x]) if skip else x
 
@@ -161,7 +159,7 @@ def bbox_iou(box1, box2):
     return float(intersect) / union
 
 def make_yolov3_model():
-    input_image = Input(shape=(None, None, 3))
+    input_image = tf.keras.layers.Input(shape=(None, None, 3))
 
     # Layer  0 => 4
     x = _conv_block(input_image, [{'filter': 32, 'kernel': 3, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 0},
@@ -225,8 +223,8 @@ def make_yolov3_model():
 
     # Layer 83 => 86
     x = _conv_block(x, [{'filter': 256, 'kernel': 1, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 84}], skip=False)
-    x = UpSampling2D(2)(x)
-    x = concatenate([x, skip_61])
+    x = tf.keras.layers.UpSampling2D(2)(x)
+    x = tf.keras.layers.Concatenate()([x, skip_61])
 
     # Layer 87 => 91
     x = _conv_block(x, [{'filter': 256, 'kernel': 1, 'stride': 1, 'bnorm': True, 'leaky': True, 'layer_idx': 87},
@@ -241,8 +239,8 @@ def make_yolov3_model():
 
     # Layer 95 => 98
     x = _conv_block(x, [{'filter': 128, 'kernel': 1, 'stride': 1, 'bnorm': True, 'leaky': True,   'layer_idx': 96}], skip=False)
-    x = UpSampling2D(2)(x)
-    x = concatenate([x, skip_36])
+    x = tf.keras.layers.UpSampling2D(2)(x)
+    x = tf.keras.layers.Concatenate()([x, skip_36])
 
     # Layer 99 => 106
     yolo_106 = _conv_block(x, [{'filter': 128, 'kernel': 1, 'stride': 1, 'bnorm': True,  'leaky': True,  'layer_idx': 99},
@@ -253,7 +251,7 @@ def make_yolov3_model():
                                {'filter': 256, 'kernel': 3, 'stride': 1, 'bnorm': True,  'leaky': True,  'layer_idx': 104},
                                {'filter': 255, 'kernel': 1, 'stride': 1, 'bnorm': False, 'leaky': False, 'layer_idx': 105}], skip=False)
 
-    model = Model(input_image, [yolo_82, yolo_94, yolo_106])    
+    model = tf.keras.models.Model(input_image, [yolo_82, yolo_94, yolo_106])    
     return model
 
 def preprocess_input(image, net_h, net_w):
