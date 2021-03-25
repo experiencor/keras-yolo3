@@ -12,7 +12,7 @@ numpy==1.18.1
 opencv-contrib-python==4.1.2.30
 opt-einsum==3.1.0
 protobuf==3.11.2
-PyYAML==5.3
+PyYAML==5.4
 scipy==1.4.1
 six==1.14.0
 tensorboard==1.15.0
