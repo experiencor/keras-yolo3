@@ -1,5 +1,5 @@
 import argparse
-import os
+import os, sys
 import numpy as np
 from keras.layers import Conv2D, Input, BatchNormalization, LeakyReLU, ZeroPadding2D, UpSampling2D
 from keras.layers.merge import add, concatenate
@@ -7,7 +7,7 @@ from keras.models import Model
 import struct
 import cv2
 
-np.set_printoptions(threshold=np.nan)
+np.set_printoptions(threshold=sys.maxsize)
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
