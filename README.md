@@ -33,7 +33,7 @@ It has been tested to work with Python 2.7.13 and 3.5.3.
 
 Grab the pretrained weights of yolo3 from https://pjreddie.com/media/files/yolov3.weights.
 
-```python yolo3_one_file_to_detect_them_all.py -w yolo3.weights -i dog.jpg``` 
+```python yolo3_one_file_to_detect_them_all.py -w yolo3.weights -i /path/to/image/or/video``` 
 
 ## Training
 

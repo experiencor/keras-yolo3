@@ -1,13 +1,14 @@
 import argparse
-import os
+import os, sys
 import numpy as np
 from keras.layers import Conv2D, Input, BatchNormalization, LeakyReLU, ZeroPadding2D, UpSampling2D
 from keras.layers.merge import add, concatenate
 from keras.models import Model
 import struct
 import cv2
+from tqdm import tqdm
 
-np.set_printoptions(threshold=np.nan)
+np.set_printoptions(threshold=sys.maxsize)
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
@@ -380,7 +381,7 @@ def draw_boxes(image, boxes, labels, obj_thresh):
 
 def _main_(args):
     weights_path = args.weights
-    image_path   = args.image
+    input_path   = args.image
 
     # set some parameters
     net_h, net_w = 416, 416
@@ -404,30 +405,90 @@ def _main_(args):
     weight_reader = WeightReader(weights_path)
     weight_reader.load_weights(yolov3)
 
-    # preprocess the image
-    image = cv2.imread(image_path)
-    image_h, image_w, _ = image.shape
-    new_image = preprocess_input(image, net_h, net_w)
+    if input_path[-4:] == '.mp4':  # do detection on a video
+        video_out = input_path[:-4] + '_detected' + input_path[-4:]
+        video_reader = cv2.VideoCapture(input_path)
 
-    # run the prediction
-    yolos = yolov3.predict(new_image)
-    boxes = []
+        nb_frames = int(video_reader.get(cv2.CAP_PROP_FRAME_COUNT))
+        frame_h = int(video_reader.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        frame_w = int(video_reader.get(cv2.CAP_PROP_FRAME_WIDTH))
 
-    for i in range(len(yolos)):
-        # decode the output of the network
-        boxes += decode_netout(yolos[i][0], anchors[i], obj_thresh, nms_thresh, net_h, net_w)
+        video_writer = cv2.VideoWriter(video_out,
+                                       cv2.VideoWriter_fourcc(*'MPEG'),
+                                       50.0,
+                                       (frame_w, frame_h))
+        # the main loop
+        batch_size = 1
+        images = []
+        start_point = 0  # %
+        show_window = False
+        for i in tqdm(range(nb_frames)):
+            _, image = video_reader.read()
 
-    # correct the sizes of the bounding boxes
-    correct_yolo_boxes(boxes, image_h, image_w, net_h, net_w)
+            if (float(i + 1) / nb_frames) > start_point / 100.:
+                images += [image]
 
-    # suppress non-maximal boxes
-    do_nms(boxes, nms_thresh)     
+                if (i % batch_size == 0) or (i == (nb_frames - 1) and len(images) > 0):
+                    for i in range(len(images)):
+                        # preprocess the image
+                        image_h, image_w, _ = images[i].shape
+                        new_image = preprocess_input(images[i], net_h, net_w)
 
-    # draw bounding boxes on the image using labels
-    draw_boxes(image, boxes, labels, obj_thresh) 
- 
-    # write the image with bounding boxes to file
-    cv2.imwrite(image_path[:-4] + '_detected' + image_path[-4:], (image).astype('uint8')) 
+                        # run the prediction
+                        yolos = yolov3.predict(new_image)
+                        boxes = []
+
+                        for j in range(len(yolos)):
+                            # decode the output of the network
+                            boxes += decode_netout(yolos[j][0], anchors[j], obj_thresh, nms_thresh, net_h, net_w)
+
+                        # correct the sizes of the bounding boxes
+                        correct_yolo_boxes(boxes, image_h, image_w, net_h, net_w)
+
+                        # suppress non-maximal boxes
+                        do_nms(boxes, nms_thresh)
+
+                        # draw bounding boxes on the image using labels
+                        draw_boxes(images[i], boxes, labels, obj_thresh)
+
+                        # show the video with detection bounding boxes
+                        if show_window: cv2.imshow('video with bboxes', images[i])
+
+                        # write result to the output video
+                        video_writer.write(images[i])
+
+                    images = []
+
+                if show_window and cv2.waitKey(1) == 27: break  # esc to quit
+
+        if show_window: cv2.destroyAllWindows()
+        video_reader.release()
+        video_writer.release()
+    else:
+        # preprocess the image
+        image = cv2.imread(input_path)
+        image_h, image_w, _ = image.shape
+        new_image = preprocess_input(image, net_h, net_w)
+
+        # run the prediction
+        yolos = yolov3.predict(new_image)
+        boxes = []
+
+        for i in range(len(yolos)):
+            # decode the output of the network
+            boxes += decode_netout(yolos[i][0], anchors[i], obj_thresh, nms_thresh, net_h, net_w)
+
+        # correct the sizes of the bounding boxes
+        correct_yolo_boxes(boxes, image_h, image_w, net_h, net_w)
+
+        # suppress non-maximal boxes
+        do_nms(boxes, nms_thresh)
+
+        # draw bounding boxes on the image using labels
+        draw_boxes(image, boxes, labels, obj_thresh)
+
+        # write the image with bounding boxes to file
+        cv2.imwrite(input_path[:-4] + '_detected' + input_path[-4:], (image).astype('uint8'))
 
 if __name__ == '__main__':
     args = argparser.parse_args()
