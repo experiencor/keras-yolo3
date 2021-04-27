@@ -24,7 +24,9 @@ def parse_voc_annotation(ann_dir, img_dir, cache_name, labels=[]):
             
             for elem in tree.iter():
                 if 'filename' in elem.tag:
-                    img['filename'] = img_dir + elem.text
+                    # split will just take image name 
+                    # to avoid full path annotation errors
+                    img['filename'] = img_dir + elem.text.split('/')[-1] 
                 if 'width' in elem.tag:
                     img['width'] = int(elem.text)
                 if 'height' in elem.tag:
