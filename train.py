@@ -35,21 +35,21 @@ def create_training_instances(
     labels,
 ):
     # parse annotations of the training set
-    train_ints, train_labels = parse_voc_annotation(train_annot_folder, train_image_folder, train_cache, labels)
+    train_inst, train_labels = parse_voc_annotation(train_annot_folder, train_image_folder, train_cache, labels)
 
     # parse annotations of the validation set, if any, otherwise split the training set
     if os.path.exists(valid_annot_folder):
-        valid_ints, valid_labels = parse_voc_annotation(valid_annot_folder, valid_image_folder, valid_cache, labels)
+        valid_inst, valid_labels = parse_voc_annotation(valid_annot_folder, valid_image_folder, valid_cache, labels)
     else:
         print("valid_annot_folder not exists. Spliting the trainining set.")
 
-        train_valid_split = int(0.8*len(train_ints))
+        train_valid_split = int(0.8*len(train_inst))
         np.random.seed(0)
-        np.random.shuffle(train_ints)
+        np.random.shuffle(train_inst)
         np.random.seed()
 
-        valid_ints = train_ints[train_valid_split:]
-        train_ints = train_ints[:train_valid_split]
+        valid_inst = train_inst[train_valid_split:]
+        train_inst = train_inst[:train_valid_split]
 
     # compare the seen labels with the given labels in config.json
     if len(labels) > 0:
@@ -67,9 +67,9 @@ def create_training_instances(
         print(train_labels)
         labels = train_labels.keys()
 
-    max_box_per_image = max([len(inst['object']) for inst in (train_ints + valid_ints)])
+    max_box_per_image = max([len(inst['object']) for inst in (train_inst + valid_inst)])
 
-    return train_ints, valid_ints, sorted(labels), max_box_per_image
+    return train_inst, valid_inst, sorted(labels), max_box_per_image
 
 def create_callbacks(saved_weights_name, tensorboard_logs, model_to_save):
     makedirs(tensorboard_logs)
@@ -181,7 +181,7 @@ def _main_(args):
     ###############################
     #   Parse the annotations 
     ###############################
-    train_ints, valid_ints, labels, max_box_per_image = create_training_instances(
+    train_inst, valid_inst, labels, max_box_per_image = create_training_instances(
         config['train']['train_annot_folder'],
         config['train']['train_image_folder'],
         config['train']['cache_name'],
@@ -196,7 +196,7 @@ def _main_(args):
     #   Create the generators 
     ###############################    
     train_generator = BatchGenerator(
-        instances           = train_ints, 
+        instances           = train_inst, 
         anchors             = config['model']['anchors'],   
         labels              = labels,        
         downsample          = 32, # ratio between network input's size and network output's size, 32 for YOLOv3
@@ -210,7 +210,7 @@ def _main_(args):
     )
     
     valid_generator = BatchGenerator(
-        instances           = valid_ints, 
+        instances           = valid_inst, 
         anchors             = config['model']['anchors'],   
         labels              = labels,        
         downsample          = 32, # ratio between network input's size and network output's size, 32 for YOLOv3
