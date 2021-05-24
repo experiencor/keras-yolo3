@@ -29,6 +29,17 @@ And for the GPU to work, make sure you've got the drivers installed beforehand (
 
 It has been tested to work with Python 2.7.13 and 3.5.3.
 
+### Docker
+
+To install using docker, run
+```bash
+$ docker build -t keras-yolo3:latest .
+```
+After the build has finished, run the cotnainer:
+```bash
+$ docker run -it -v $(pwd):/keras-yolo3 keras-yolo3:latest bash
+```
+
 ## Detection
 
 Grab the pretrained weights of yolo3 from https://pjreddie.com/media/files/yolov3.weights.
