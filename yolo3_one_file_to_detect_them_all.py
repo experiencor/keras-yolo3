@@ -291,7 +291,7 @@ def decode_netout(netout, anchors, obj_thresh, nms_thresh, net_h, net_w):
     netout[..., 5:] *= netout[..., 5:] > obj_thresh
 
     for i in range(grid_h*grid_w):
-        row = i / grid_w
+        row = i // grid_w
         col = i % grid_w
         
         for b in range(nb_box):
