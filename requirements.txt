@@ -11,7 +11,7 @@ Markdown==3.1.1
 numpy==1.18.1
 opencv-contrib-python==4.1.2.30
 opt-einsum==3.1.0
-protobuf==3.11.2
+protobuf==3.18.3
 PyYAML==5.3
 scipy==1.4.1
 six==1.14.0
