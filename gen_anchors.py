@@ -42,8 +42,7 @@ def print_anchors(centroids):
     sorted_indices = np.argsort(widths)
 
     r = "anchors: ["
-    for i in sorted_indices:
-        out_string += str(int(anchors[i,0]*416)) + ',' + str(int(anchors[i,1]*416)) + ', '
+    out_string += ', '.join([str(int(anchors[i,0]*416)) + ',' + str(int(anchors[i,1]*416)) for i in sorted_indices])
             
     print(out_string[:-2])
 
